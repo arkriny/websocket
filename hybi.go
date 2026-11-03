@@ -513,11 +513,11 @@ func (c *serverHandshaker) ReadHandshake(buf *bufio.Reader, req *http.Request) (
 		return http.StatusBadRequest, ErrNotWebSocket
 	}
 
-	key := req.Header.Get("Sec-Websocket-Key")
+	key := req.Header.Get("Sec-WebSocket-Key")
 	if key == "" {
 		return http.StatusBadRequest, ErrChallengeResponse
 	}
-	version := req.Header.Get("Sec-Websocket-Version")
+	version := req.Header.Get("Sec-WebSocket-Version")
 	switch version {
 	case "13":
 		c.Version = ProtocolVersionHybi13
@@ -534,7 +534,7 @@ func (c *serverHandshaker) ReadHandshake(buf *bufio.Reader, req *http.Request) (
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
-	protocol := strings.TrimSpace(req.Header.Get("Sec-Websocket-Protocol"))
+	protocol := strings.TrimSpace(req.Header.Get("Sec-WebSocket-Protocol"))
 	if protocol != "" {
 		protocols := strings.Split(protocol, ",")
 		for i := 0; i < len(protocols); i++ {
