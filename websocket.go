@@ -151,7 +151,7 @@ again:
 		}
 	}
 	n, err = ws.frameReader.Read(msg)
-	if err == io.EOF {
+	if errors.Is(err, io.EOF) {
 		ws.frameReader = nil
 		goto again
 	}

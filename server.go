@@ -6,6 +6,7 @@ package websocket
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -14,7 +15,7 @@ import (
 func newServerConn(rwc io.ReadWriteCloser, buf *bufio.ReadWriter, req *http.Request, config *Config, handshake func(*Config, *http.Request) error) (conn *Conn, err error) {
 	hs := &serverHandshaker{Config: config}
 	code, err := hs.ReadHandshake(req)
-	if err == ErrBadWebSocketVersion {
+	if errors.Is(err, ErrBadWebSocketVersion) {
 		fmt.Fprintf(buf, "HTTP/1.1 %03d %s\r\n", code, http.StatusText(code))
 		fmt.Fprintf(buf, "Sec-WebSocket-Version: %s\r\n", SupportedProtocolVersion)
 		buf.WriteString("\r\n")

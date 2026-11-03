@@ -7,6 +7,7 @@ package websocket
 import (
 	"bytes"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -293,7 +294,7 @@ func TestWithTwoProtocol(t *testing.T) {
 func TestWithBadProtocol(t *testing.T) {
 	t.Parallel()
 	_, err := testWithProtocol(t, []string{"test"})
-	if err != ErrBadStatus {
+	if !errors.Is(err, ErrBadStatus) {
 		t.Errorf("SubProto: expected %v, got %v", ErrBadStatus, err)
 	}
 }
@@ -345,8 +346,8 @@ func TestDialConfigBadVersion(t *testing.T) {
 
 	_, err := DialConfig(config)
 
-	if dialerr, ok := err.(*DialError); ok {
-		if dialerr.Err != ErrBadProtocolVersion {
+	if dialerr, ok := errors.AsType[*DialError](err); ok {
+		if !errors.Is(dialerr.Err, ErrBadProtocolVersion) {
 			t.Errorf("dial expected err %q but got %q", ErrBadProtocolVersion, dialerr.Err)
 		}
 	}
@@ -360,11 +361,11 @@ func TestDialConfigWithDialer(t *testing.T) {
 		Deadline: time.Now().Add(-time.Minute),
 	}
 	_, err := DialConfig(config)
-	dialerr, ok := err.(*DialError)
+	dialerr, ok := errors.AsType[*DialError](err)
 	if !ok {
 		t.Fatalf("DialError expected, got %#v", err)
 	}
-	neterr, ok := dialerr.Err.(*net.OpError)
+	neterr, ok := errors.AsType[*net.OpError](dialerr.Err)
 	if !ok {
 		t.Fatalf("net.OpError error expected, got %#v", dialerr.Err)
 	}
@@ -631,9 +632,9 @@ func TestCodec_ReceiveLimited(t *testing.T) {
 			t.Logf("payload #%d (size %d, exceeds limit: %v)", i, len(p), len(p) > limit)
 			var recv []byte
 			err := Message.Receive(ws, &recv)
-			switch err {
-			case nil:
-			case ErrFrameTooLarge:
+			switch {
+			case err == nil:
+			case errors.Is(err, ErrFrameTooLarge):
 				if len(p) <= limit {
 					t.Fatalf("unexpected frame size limit: expected %d bytes of payload having limit at %d", len(p), limit)
 				}

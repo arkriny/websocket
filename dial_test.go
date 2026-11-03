@@ -33,11 +33,11 @@ func TestDialConfigTLSWithDialer(t *testing.T) {
 		InsecureSkipVerify: true,
 	}
 	_, err := DialConfig(config)
-	dialerr, ok := err.(*DialError)
+	dialerr, ok := errors.AsType[*DialError](err)
 	if !ok {
 		t.Fatalf("DialError expected, got %#v", err)
 	}
-	neterr, ok := dialerr.Err.(*net.OpError)
+	neterr, ok := errors.AsType[*net.OpError](dialerr.Err)
 	if !ok {
 		t.Fatalf("net.OpError error expected, got %#v", dialerr.Err)
 	}
@@ -71,7 +71,7 @@ func TestDialConfigTLSWithTimeouts(t *testing.T) {
 	}
 
 	_, err := config.DialContext(ctx)
-	dialerr, ok := err.(*DialError)
+	dialerr, ok := errors.AsType[*DialError](err)
 	if !ok {
 		t.Fatalf("DialError expected, got %#v", err)
 	}

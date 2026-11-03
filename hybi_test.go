@@ -7,6 +7,7 @@ package websocket
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -283,7 +284,7 @@ Sec-WebSocket-Version: 9
 		t.Fatal("request", err)
 	}
 	code, err := handshaker.ReadHandshake(req)
-	if err != ErrBadWebSocketVersion {
+	if !errors.Is(err, ErrBadWebSocketVersion) {
 		t.Errorf("handshake expected err %q but got %q", ErrBadWebSocketVersion, err)
 	}
 	if code != http.StatusBadRequest {
@@ -335,7 +336,7 @@ func testHybiFrame(t *testing.T, testHeader, testPayload, testMaskedPayload []by
 	}
 	payload := make([]byte, len(testPayload))
 	_, err = frame.Read(payload)
-	if err != nil && err != io.EOF {
+	if err != nil && !errors.Is(err, io.EOF) {
 		t.Errorf("read %v", err)
 	}
 	if !bytes.Equal(testPayload, payload) {
@@ -544,7 +545,7 @@ func TestHybiServerReadWithoutMasking(t *testing.T) {
 	// server MUST close the connection upon receiving a non-masked frame.
 	msg := make([]byte, 512)
 	_, err := conn.Read(msg)
-	if err != io.EOF {
+	if !errors.Is(err, io.EOF) {
 		t.Errorf("read 1st frame, expect %q, but got %q", io.EOF, err)
 	}
 }
@@ -561,7 +562,7 @@ func TestHybiClientReadWithMasking(t *testing.T) {
 	// client MUST close the connection upon receiving a masked frame.
 	msg := make([]byte, 512)
 	_, err := conn.Read(msg)
-	if err != io.EOF {
+	if !errors.Is(err, io.EOF) {
 		t.Errorf("read 1st frame, expect %q, but got %q", io.EOF, err)
 	}
 }
