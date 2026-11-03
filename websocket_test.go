@@ -54,7 +54,7 @@ func countServer(ws *Conn) {
 
 func ctrlAndDataServer(ws *Conn) {
 	defer ws.Close()
-	h := &hybiFrameHandler{conn: ws}
+	h := &frameHandler{conn: ws}
 	ws.frameHandler = h
 
 	go func() {
@@ -565,7 +565,7 @@ func TestCtrlAndData(t *testing.T) {
 	}
 	defer ws.Close()
 
-	h := &hybiFrameHandler{conn: ws}
+	h := &frameHandler{conn: ws}
 	ws.frameHandler = h
 
 	b := make([]byte, 128)

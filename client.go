@@ -44,12 +44,12 @@ func NewConfig(server, origin string) (config *Config, err error) {
 func NewClient(config *Config, rwc io.ReadWriteCloser) (ws *Conn, err error) {
 	br := bufio.NewReader(rwc)
 	bw := bufio.NewWriter(rwc)
-	err = hybiClientHandshake(config, br, bw)
+	err = clientHandshake(config, br, bw)
 	if err != nil {
 		return
 	}
 	buf := bufio.NewReadWriter(br, bw)
-	ws = newHybiClientConn(config, buf, rwc)
+	ws = newClientConn(config, buf, rwc)
 	return
 }
 

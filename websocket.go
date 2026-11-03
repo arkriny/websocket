@@ -114,13 +114,13 @@ type Conn struct {
 	rwc io.ReadWriteCloser
 
 	rio                sync.Mutex
-	frameReaderFactory hybiFrameReaderFactory
-	frameReader        *hybiFrameReader
+	frameReaderFactory frameReaderFactory
+	frameReader        *frameReader
 
 	wio                sync.Mutex
-	frameWriterFactory hybiFrameWriterFactory
+	frameWriterFactory frameWriterFactory
 
-	frameHandler *hybiFrameHandler
+	frameHandler *frameHandler
 	PayloadType  byte
 
 	// MaxPayloadBytes limits the size of frame payload received over Conn

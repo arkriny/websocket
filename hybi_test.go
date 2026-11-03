@@ -68,7 +68,7 @@ Sec-WebSocket-Protocol: chat
 		config.handshakeData = map[string]string{
 			"key": "dGhlIHNhbXBsZSBub25jZQ==",
 		}
-		if err := hybiClientHandshake(&config, br, bw); err != nil {
+		if err := clientHandshake(&config, br, bw); err != nil {
 			t.Fatal("handshake", err)
 		}
 		req, err := http.ReadRequest(bufio.NewReader(&b))
@@ -132,7 +132,7 @@ Sec-WebSocket-Protocol: chat
 	config.handshakeData = map[string]string{
 		"key": "dGhlIHNhbXBsZSBub25jZQ==",
 	}
-	err = hybiClientHandshake(config, br, bw)
+	err = clientHandshake(config, br, bw)
 	if err != nil {
 		t.Errorf("handshake failed: %v", err)
 	}
@@ -170,7 +170,7 @@ Sec-WebSocket-Protocol: chat
 
 func TestHybiServerHandshake(t *testing.T) {
 	config := new(Config)
-	handshaker := &hybiServerHandshaker{Config: config}
+	handshaker := &serverHandshaker{Config: config}
 	br := bufio.NewReader(strings.NewReader(`GET /chat HTTP/1.1
 Host: server.example.com
 Upgrade: websocket
@@ -220,7 +220,7 @@ Sec-WebSocket-Version: 13
 
 func TestHybiServerHandshakeNoSubProtocol(t *testing.T) {
 	config := new(Config)
-	handshaker := &hybiServerHandshaker{Config: config}
+	handshaker := &serverHandshaker{Config: config}
 	br := bufio.NewReader(strings.NewReader(`GET /chat HTTP/1.1
 Host: server.example.com
 Upgrade: websocket
@@ -265,7 +265,7 @@ Sec-WebSocket-Version: 13
 
 func TestHybiServerHandshakeHybiBadVersion(t *testing.T) {
 	config := new(Config)
-	handshaker := &hybiServerHandshaker{Config: config}
+	handshaker := &serverHandshaker{Config: config}
 	br := bufio.NewReader(strings.NewReader(`GET /chat HTTP/1.1
 Host: server.example.com
 Upgrade: websocket
@@ -289,11 +289,11 @@ Sec-WebSocket-Version: 9
 	}
 }
 
-func testHybiFrame(t *testing.T, testHeader, testPayload, testMaskedPayload []byte, frameHeader *hybiFrameHeader) {
+func testHybiFrame(t *testing.T, testHeader, testPayload, testMaskedPayload []byte, fh *frameHeader) {
 	b := bytes.NewBuffer([]byte{})
-	frameWriterFactory := &hybiFrameWriterFactory{bufio.NewWriter(b), false}
+	frameWriterFactory := &frameWriterFactory{bufio.NewWriter(b), false}
 	w, _ := frameWriterFactory.NewFrameWriter(TextFrame)
-	w.header = frameHeader
+	w.header = fh
 	_, err := w.Write(testPayload)
 	w.Close()
 	if err != nil {
@@ -305,7 +305,7 @@ func testHybiFrame(t *testing.T, testHeader, testPayload, testMaskedPayload []by
 	if !bytes.Equal(expectedFrame, b.Bytes()) {
 		t.Errorf("frame expected %q got %q", expectedFrame, b.Bytes())
 	}
-	frameReaderFactory := &hybiFrameReaderFactory{bufio.NewReader(b)}
+	frameReaderFactory := &frameReaderFactory{bufio.NewReader(b)}
 	frame, err := frameReaderFactory.NewFrameReader()
 	if err != nil {
 		t.Errorf("Read error %q", err)
@@ -326,10 +326,10 @@ func testHybiFrame(t *testing.T, testHeader, testPayload, testMaskedPayload []by
 			}
 		}
 	}
-	if frameHeader.Fin != frame.header.Fin ||
-		frameHeader.OpCode != frame.header.OpCode ||
+	if fh.Fin != frame.header.Fin ||
+		fh.OpCode != frame.header.OpCode ||
 		len(testPayload) != int(frame.header.Length) {
-		t.Errorf("mismatch %v (%d) vs %v", frameHeader, len(testPayload), frame)
+		t.Errorf("mismatch %v (%d) vs %v", fh, len(testPayload), frame)
 	}
 	payload := make([]byte, len(testPayload))
 	_, err = frame.Read(payload)
@@ -342,63 +342,63 @@ func testHybiFrame(t *testing.T, testHeader, testPayload, testMaskedPayload []by
 }
 
 func TestHybiShortTextFrame(t *testing.T) {
-	frameHeader := &hybiFrameHeader{Fin: true, OpCode: TextFrame}
+	fh := &frameHeader{Fin: true, OpCode: TextFrame}
 	payload := []byte("hello")
-	testHybiFrame(t, []byte{0x81, 0x05}, payload, payload, frameHeader)
+	testHybiFrame(t, []byte{0x81, 0x05}, payload, payload, fh)
 
 	payload = make([]byte, 125)
-	testHybiFrame(t, []byte{0x81, 125}, payload, payload, frameHeader)
+	testHybiFrame(t, []byte{0x81, 125}, payload, payload, fh)
 }
 
 func TestHybiShortMaskedTextFrame(t *testing.T) {
-	frameHeader := &hybiFrameHeader{Fin: true, OpCode: TextFrame,
+	fh := &frameHeader{Fin: true, OpCode: TextFrame,
 		MaskingKey: []byte{0xcc, 0x55, 0x80, 0x20}}
 	payload := []byte("hello")
 	maskedPayload := []byte{0xa4, 0x30, 0xec, 0x4c, 0xa3}
 	header := []byte{0x81, 0x85}
-	header = append(header, frameHeader.MaskingKey...)
-	testHybiFrame(t, header, payload, maskedPayload, frameHeader)
+	header = append(header, fh.MaskingKey...)
+	testHybiFrame(t, header, payload, maskedPayload, fh)
 }
 
 func TestHybiShortBinaryFrame(t *testing.T) {
-	frameHeader := &hybiFrameHeader{Fin: true, OpCode: BinaryFrame}
+	fh := &frameHeader{Fin: true, OpCode: BinaryFrame}
 	payload := []byte("hello")
-	testHybiFrame(t, []byte{0x82, 0x05}, payload, payload, frameHeader)
+	testHybiFrame(t, []byte{0x82, 0x05}, payload, payload, fh)
 
 	payload = make([]byte, 125)
-	testHybiFrame(t, []byte{0x82, 125}, payload, payload, frameHeader)
+	testHybiFrame(t, []byte{0x82, 125}, payload, payload, fh)
 }
 
 func TestHybiControlFrame(t *testing.T) {
 	payload := []byte("hello")
 
-	frameHeader := &hybiFrameHeader{Fin: true, OpCode: PingFrame}
-	testHybiFrame(t, []byte{0x89, 0x05}, payload, payload, frameHeader)
+	fh := &frameHeader{Fin: true, OpCode: PingFrame}
+	testHybiFrame(t, []byte{0x89, 0x05}, payload, payload, fh)
 
-	frameHeader = &hybiFrameHeader{Fin: true, OpCode: PingFrame}
-	testHybiFrame(t, []byte{0x89, 0x00}, nil, nil, frameHeader)
+	fh = &frameHeader{Fin: true, OpCode: PingFrame}
+	testHybiFrame(t, []byte{0x89, 0x00}, nil, nil, fh)
 
-	frameHeader = &hybiFrameHeader{Fin: true, OpCode: PongFrame}
-	testHybiFrame(t, []byte{0x8A, 0x05}, payload, payload, frameHeader)
+	fh = &frameHeader{Fin: true, OpCode: PongFrame}
+	testHybiFrame(t, []byte{0x8A, 0x05}, payload, payload, fh)
 
-	frameHeader = &hybiFrameHeader{Fin: true, OpCode: PongFrame}
-	testHybiFrame(t, []byte{0x8A, 0x00}, nil, nil, frameHeader)
+	fh = &frameHeader{Fin: true, OpCode: PongFrame}
+	testHybiFrame(t, []byte{0x8A, 0x00}, nil, nil, fh)
 
-	frameHeader = &hybiFrameHeader{Fin: true, OpCode: CloseFrame}
+	fh = &frameHeader{Fin: true, OpCode: CloseFrame}
 	payload = []byte{0x03, 0xe8} // 1000
-	testHybiFrame(t, []byte{0x88, 0x02}, payload, payload, frameHeader)
+	testHybiFrame(t, []byte{0x88, 0x02}, payload, payload, fh)
 }
 
 func TestHybiLongFrame(t *testing.T) {
-	frameHeader := &hybiFrameHeader{Fin: true, OpCode: TextFrame}
+	fh := &frameHeader{Fin: true, OpCode: TextFrame}
 	payload := make([]byte, 126)
-	testHybiFrame(t, []byte{0x81, 126, 0x00, 126}, payload, payload, frameHeader)
+	testHybiFrame(t, []byte{0x81, 126, 0x00, 126}, payload, payload, fh)
 
 	payload = make([]byte, 65535)
-	testHybiFrame(t, []byte{0x81, 126, 0xff, 0xff}, payload, payload, frameHeader)
+	testHybiFrame(t, []byte{0x81, 126, 0xff, 0xff}, payload, payload, fh)
 
 	payload = make([]byte, 65536)
-	testHybiFrame(t, []byte{0x81, 127, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00}, payload, payload, frameHeader)
+	testHybiFrame(t, []byte{0x81, 127, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00}, payload, payload, fh)
 }
 
 func TestHybiClientRead(t *testing.T) {
@@ -407,7 +407,7 @@ func TestHybiClientRead(t *testing.T) {
 		0x81, 0x05, 'w', 'o', 'r', 'l', 'd'}
 	br := bufio.NewReader(bytes.NewBuffer(wireData))
 	bw := bufio.NewWriter(bytes.NewBuffer([]byte{}))
-	conn := newHybiConn(newConfig(t, "/"), bufio.NewReadWriter(br, bw), nil, nil)
+	conn := newConn(newConfig(t, "/"), bufio.NewReadWriter(br, bw), nil, nil)
 
 	msg := make([]byte, 512)
 	n, err := conn.Read(msg)
@@ -445,7 +445,7 @@ func TestHybiShortRead(t *testing.T) {
 		0x81, 0x05, 'w', 'o', 'r', 'l', 'd'}
 	br := bufio.NewReader(bytes.NewBuffer(wireData))
 	bw := bufio.NewWriter(bytes.NewBuffer([]byte{}))
-	conn := newHybiConn(newConfig(t, "/"), bufio.NewReadWriter(br, bw), nil, nil)
+	conn := newConn(newConfig(t, "/"), bufio.NewReadWriter(br, bw), nil, nil)
 
 	step := 0
 	pos := 0
@@ -489,7 +489,7 @@ func TestHybiServerRead(t *testing.T) {
 	}
 	br := bufio.NewReader(bytes.NewBuffer(wireData))
 	bw := bufio.NewWriter(bytes.NewBuffer([]byte{}))
-	conn := newHybiConn(newConfig(t, "/"), bufio.NewReadWriter(br, bw), nil, new(http.Request))
+	conn := newConn(newConfig(t, "/"), bufio.NewReadWriter(br, bw), nil, new(http.Request))
 
 	expected := [][]byte{[]byte("hello"), []byte("world")}
 
@@ -529,7 +529,7 @@ func TestHybiServerReadWithoutMasking(t *testing.T) {
 	wireData := []byte{0x81, 0x05, 'h', 'e', 'l', 'l', 'o'}
 	br := bufio.NewReader(bytes.NewBuffer(wireData))
 	bw := bufio.NewWriter(bytes.NewBuffer([]byte{}))
-	conn := newHybiConn(newConfig(t, "/"), bufio.NewReadWriter(br, bw), nil, new(http.Request))
+	conn := newConn(newConfig(t, "/"), bufio.NewReadWriter(br, bw), nil, new(http.Request))
 	// server MUST close the connection upon receiving a non-masked frame.
 	msg := make([]byte, 512)
 	_, err := conn.Read(msg)
@@ -544,7 +544,7 @@ func TestHybiClientReadWithMasking(t *testing.T) {
 	}
 	br := bufio.NewReader(bytes.NewBuffer(wireData))
 	bw := bufio.NewWriter(bytes.NewBuffer([]byte{}))
-	conn := newHybiConn(newConfig(t, "/"), bufio.NewReadWriter(br, bw), nil, nil)
+	conn := newConn(newConfig(t, "/"), bufio.NewReadWriter(br, bw), nil, nil)
 
 	// client MUST close the connection upon receiving a masked frame.
 	msg := make([]byte, 512)
@@ -554,12 +554,12 @@ func TestHybiClientReadWithMasking(t *testing.T) {
 	}
 }
 
-// Test the hybiServerHandshaker supports firefox implementation and
+// Test the serverHandshaker supports firefox implementation and
 // checks Connection request header include (but it's not necessary
 // equal to) "upgrade"
 func TestHybiServerFirefoxHandshake(t *testing.T) {
 	config := new(Config)
-	handshaker := &hybiServerHandshaker{Config: config}
+	handshaker := &serverHandshaker{Config: config}
 	br := bufio.NewReader(strings.NewReader(`GET /chat HTTP/1.1
 Host: server.example.com
 Upgrade: websocket
