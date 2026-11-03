@@ -122,11 +122,6 @@ type frameReader interface {
 	Len() int
 }
 
-type frameHandler interface {
-	HandleFrame(frame frameReader) (r frameReader, err error)
-	WriteClose(status int) (err error)
-}
-
 // Conn represents a WebSocket connection.
 //
 // Multiple goroutines may invoke methods on a Conn simultaneously.
@@ -144,7 +139,7 @@ type Conn struct {
 	wio                sync.Mutex
 	frameWriterFactory hybiFrameWriterFactory
 
-	frameHandler
+	frameHandler       *hybiFrameHandler
 	PayloadType        byte
 	defaultCloseStatus int
 
