@@ -306,14 +306,14 @@ func testHybiFrame(t *testing.T, testHeader, testPayload, testMaskedPayload []by
 		t.Errorf("frame expected %q got %q", expectedFrame, b.Bytes())
 	}
 	frameReaderFactory := &hybiFrameReaderFactory{bufio.NewReader(b)}
-	r, err := frameReaderFactory.NewFrameReader()
+	frame, err := frameReaderFactory.NewFrameReader()
 	if err != nil {
 		t.Errorf("Read error %q", err)
 	}
-	if header := r.HeaderReader(); header == nil {
+	if header := frame.HeaderReader(); header == nil {
 		t.Errorf("no header")
 	} else {
-		actualHeader := make([]byte, r.Len())
+		actualHeader := make([]byte, frame.Len())
 		n, err := header.Read(actualHeader)
 		if err != nil {
 			t.Errorf("Read header error %q", err)
@@ -326,17 +326,16 @@ func testHybiFrame(t *testing.T, testHeader, testPayload, testMaskedPayload []by
 			}
 		}
 	}
-	if trailer := r.TrailerReader(); trailer != nil {
+	if trailer := frame.TrailerReader(); trailer != nil {
 		t.Errorf("unexpected trailer %q", trailer)
 	}
-	frame := r.(*hybiFrameReader)
 	if frameHeader.Fin != frame.header.Fin ||
 		frameHeader.OpCode != frame.header.OpCode ||
 		len(testPayload) != int(frame.header.Length) {
 		t.Errorf("mismatch %v (%d) vs %v", frameHeader, len(testPayload), frame)
 	}
 	payload := make([]byte, len(testPayload))
-	_, err = r.Read(payload)
+	_, err = frame.Read(payload)
 	if err != nil && err != io.EOF {
 		t.Errorf("read %v", err)
 	}

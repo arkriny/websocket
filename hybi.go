@@ -89,8 +89,10 @@ func (frame *hybiFrameReader) Read(msg []byte) (n int, err error) {
 	return n, err
 }
 
+// PayloadType returns payload type.
 func (frame *hybiFrameReader) PayloadType() byte { return frame.header.OpCode }
 
+// HeaderReader returns a reader to read header of the frame.
 func (frame *hybiFrameReader) HeaderReader() io.Reader {
 	if frame.header.data == nil {
 		return nil
@@ -101,8 +103,11 @@ func (frame *hybiFrameReader) HeaderReader() io.Reader {
 	return frame.header.data
 }
 
+// TrailerReader returns a reader to read trailer of the frame.
+// If it returns nil, there is no trailer in the frame.
 func (frame *hybiFrameReader) TrailerReader() io.Reader { return nil }
 
+// Len returns total length of the frame, including header and trailer.
 func (frame *hybiFrameReader) Len() (n int) { return frame.length }
 
 // A hybiFrameReaderFactory creates new frame reader based on its frame type.
@@ -113,9 +118,8 @@ type hybiFrameReaderFactory struct {
 // NewFrameReader reads a frame header from the connection, and creates new reader for the frame.
 // See Section 5.2 Base Framing protocol for detail.
 // http://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-17#section-5.2
-func (buf hybiFrameReaderFactory) NewFrameReader() (frame frameReader, err error) {
-	hybiFrame := new(hybiFrameReader)
-	frame = hybiFrame
+func (buf hybiFrameReaderFactory) NewFrameReader() (frame *hybiFrameReader, err error) {
+	frame = new(hybiFrameReader)
 	var header []byte
 	var b byte
 	// First byte. FIN/RSV1/RSV2/RSV3/OpCode(4bits)
@@ -124,12 +128,12 @@ func (buf hybiFrameReaderFactory) NewFrameReader() (frame frameReader, err error
 		return
 	}
 	header = append(header, b)
-	hybiFrame.header.Fin = ((header[0] >> 7) & 1) != 0
+	frame.header.Fin = ((header[0] >> 7) & 1) != 0
 	for i := 0; i < 3; i++ {
 		j := uint(6 - i)
-		hybiFrame.header.Rsv[i] = ((header[0] >> j) & 1) != 0
+		frame.header.Rsv[i] = ((header[0] >> j) & 1) != 0
 	}
-	hybiFrame.header.OpCode = header[0] & 0x0f
+	frame.header.OpCode = header[0] & 0x0f
 
 	// Second byte. Mask/Payload len(7bits)
 	b, err = buf.ReadByte()
@@ -142,7 +146,7 @@ func (buf hybiFrameReaderFactory) NewFrameReader() (frame frameReader, err error
 	lengthFields := 0
 	switch {
 	case b <= 125: // Payload length 7bits.
-		hybiFrame.header.Length = int64(b)
+		frame.header.Length = int64(b)
 	case b == 126: // Payload length 7+16bits
 		lengthFields = 2
 	case b == 127: // Payload length 7+64bits
@@ -157,7 +161,7 @@ func (buf hybiFrameReaderFactory) NewFrameReader() (frame frameReader, err error
 			b &= 0x7f
 		}
 		header = append(header, b)
-		hybiFrame.header.Length = hybiFrame.header.Length*256 + int64(b)
+		frame.header.Length = frame.header.Length*256 + int64(b)
 	}
 	if mask {
 		// Masking key. 4 bytes.
@@ -167,12 +171,12 @@ func (buf hybiFrameReaderFactory) NewFrameReader() (frame frameReader, err error
 				return
 			}
 			header = append(header, b)
-			hybiFrame.header.MaskingKey = append(hybiFrame.header.MaskingKey, b)
+			frame.header.MaskingKey = append(frame.header.MaskingKey, b)
 		}
 	}
-	hybiFrame.reader = io.LimitReader(buf.Reader, hybiFrame.header.Length)
-	hybiFrame.header.data = bytes.NewBuffer(header)
-	hybiFrame.length = len(header) + int(hybiFrame.header.Length)
+	frame.reader = io.LimitReader(buf.Reader, frame.header.Length)
+	frame.header.data = bytes.NewBuffer(header)
+	frame.length = len(header) + int(frame.header.Length)
 	return
 }
 
@@ -264,16 +268,16 @@ type hybiFrameHandler struct {
 	payloadType byte
 }
 
-func (handler *hybiFrameHandler) HandleFrame(frame frameReader) (frameReader, error) {
+func (handler *hybiFrameHandler) HandleFrame(frame *hybiFrameReader) (*hybiFrameReader, error) {
 	if handler.conn.IsServerConn() {
 		// The client MUST mask all frames sent to the server.
-		if frame.(*hybiFrameReader).header.MaskingKey == nil {
+		if frame.header.MaskingKey == nil {
 			handler.WriteClose(closeStatusProtocolError)
 			return nil, io.EOF
 		}
 	} else {
 		// The server MUST NOT mask all frames.
-		if frame.(*hybiFrameReader).header.MaskingKey != nil {
+		if frame.header.MaskingKey != nil {
 			handler.WriteClose(closeStatusProtocolError)
 			return nil, io.EOF
 		}
@@ -283,7 +287,7 @@ func (handler *hybiFrameHandler) HandleFrame(frame frameReader) (frameReader, er
 	}
 	switch frame.PayloadType() {
 	case ContinuationFrame:
-		frame.(*hybiFrameReader).header.OpCode = handler.payloadType
+		frame.header.OpCode = handler.payloadType
 	case TextFrame, BinaryFrame:
 		handler.payloadType = frame.PayloadType()
 	case CloseFrame:

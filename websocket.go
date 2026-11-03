@@ -103,25 +103,6 @@ type Config struct {
 	handshakeData map[string]string
 }
 
-// frameReader is an interface to read a WebSocket frame.
-type frameReader interface {
-	// Reader is to read payload of the frame.
-	io.Reader
-
-	// PayloadType returns payload type.
-	PayloadType() byte
-
-	// HeaderReader returns a reader to read header of the frame.
-	HeaderReader() io.Reader
-
-	// TrailerReader returns a reader to read trailer of the frame.
-	// If it returns nil, there is no trailer in the frame.
-	TrailerReader() io.Reader
-
-	// Len returns total length of the frame, including header and trailer.
-	Len() int
-}
-
 // Conn represents a WebSocket connection.
 //
 // Multiple goroutines may invoke methods on a Conn simultaneously.
@@ -134,7 +115,7 @@ type Conn struct {
 
 	rio                sync.Mutex
 	frameReaderFactory hybiFrameReaderFactory
-	frameReader
+	frameReader        *hybiFrameReader
 
 	wio                sync.Mutex
 	frameWriterFactory hybiFrameWriterFactory
@@ -317,7 +298,7 @@ again:
 	if maxPayloadBytes == 0 {
 		maxPayloadBytes = DefaultMaxPayloadBytes
 	}
-	if hf, ok := frame.(*hybiFrameReader); ok && hf.header.Length > int64(maxPayloadBytes) {
+	if frame.header.Length > int64(maxPayloadBytes) {
 		// payload size exceeds limit, no need to call Unmarshal
 		//
 		// set frameReader to current oversized frame so that
