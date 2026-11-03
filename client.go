@@ -107,7 +107,7 @@ func (config *Config) DialContext(ctx context.Context) (*Conn, error) {
 	success := false
 	defer func() {
 		if !success {
-			_ = client.Close()
+			client.Close()
 		}
 	}()
 
@@ -127,7 +127,7 @@ func (config *Config) DialContext(ctx context.Context) (*Conn, error) {
 	select {
 	case <-ctx.Done():
 		// Force the pending operations to fail, terminating the pending connection attempt
-		_ = client.SetDeadline(time.Now())
+		client.SetDeadline(time.Now())
 		<-doneConnecting // Wait for the goroutine that tries to establish the connection to finish
 		return nil, &DialError{config, ctx.Err()}
 	case <-doneConnecting:

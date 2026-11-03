@@ -163,10 +163,7 @@ again:
 func (ws *Conn) Write(msg []byte) (n int, err error) {
 	ws.wio.Lock()
 	defer ws.wio.Unlock()
-	w, err := ws.frameWriterFactory.NewFrameWriter(ws.PayloadType)
-	if err != nil {
-		return 0, err
-	}
+	w := ws.frameWriterFactory.NewFrameWriter(ws.PayloadType)
 	n, err = w.Write(msg)
 	w.Close()
 	return n, err
@@ -253,10 +250,7 @@ func (cd Codec) Send(ws *Conn, v interface{}) (err error) {
 	}
 	ws.wio.Lock()
 	defer ws.wio.Unlock()
-	w, err := ws.frameWriterFactory.NewFrameWriter(payloadType)
-	if err != nil {
-		return err
-	}
+	w := ws.frameWriterFactory.NewFrameWriter(payloadType)
 	_, err = w.Write(data)
 	w.Close()
 	return err

@@ -20,11 +20,7 @@ import (
 func TestSecWebSocketAccept(t *testing.T) {
 	nonce := []byte("dGhlIHNhbXBsZSBub25jZQ==")
 	expected := []byte("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=")
-	accept, err := getNonceAccept(nonce)
-	if err != nil {
-		t.Errorf("getNonceAccept: returned error %v", err)
-		return
-	}
+	accept := getNonceAccept(nonce)
 	if !bytes.Equal(expected, accept) {
 		t.Errorf("getNonceAccept: expected %q got %q", expected, accept)
 	}
@@ -292,7 +288,7 @@ Sec-WebSocket-Version: 9
 func testHybiFrame(t *testing.T, testHeader, testPayload, testMaskedPayload []byte, fh *frameHeader) {
 	b := bytes.NewBuffer([]byte{})
 	frameWriterFactory := &frameWriterFactory{bufio.NewWriter(b), false}
-	w, _ := frameWriterFactory.NewFrameWriter(TextFrame)
+	w := frameWriterFactory.NewFrameWriter(TextFrame)
 	w.header = fh
 	_, err := w.Write(testPayload)
 	w.Close()

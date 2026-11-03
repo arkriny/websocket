@@ -247,16 +247,13 @@ type frameWriterFactory struct {
 	needMaskingKey bool
 }
 
-func (buf frameWriterFactory) NewFrameWriter(payloadType byte) (*frameWriter, error) {
+func (buf frameWriterFactory) NewFrameWriter(payloadType byte) *frameWriter {
 	frameHeader := &frameHeader{Fin: true, OpCode: payloadType}
 	if buf.needMaskingKey {
-		var err error
-		frameHeader.MaskingKey, err = generateMaskingKey()
-		if err != nil {
-			return nil, err
-		}
+		frameHeader.MaskingKey = make([]byte, 4)
+		io.ReadFull(rand.Reader, frameHeader.MaskingKey)
 	}
-	return &frameWriter{writer: buf.Writer, header: frameHeader}, nil
+	return &frameWriter{writer: buf.Writer, header: frameHeader}
 }
 
 type frameHandler struct {
@@ -308,10 +305,7 @@ func (handler *frameHandler) HandleFrame(frame *frameReader) (*frameReader, erro
 func (handler *frameHandler) WriteClose(status int) (err error) {
 	handler.conn.wio.Lock()
 	defer handler.conn.wio.Unlock()
-	w, err := handler.conn.frameWriterFactory.NewFrameWriter(CloseFrame)
-	if err != nil {
-		return err
-	}
+	w := handler.conn.frameWriterFactory.NewFrameWriter(CloseFrame)
 	msg := make([]byte, 2)
 	binary.BigEndian.PutUint16(msg, uint16(status))
 	_, err = w.Write(msg)
@@ -322,10 +316,7 @@ func (handler *frameHandler) WriteClose(status int) (err error) {
 func (handler *frameHandler) WritePing(msg []byte) (n int, err error) {
 	handler.conn.wio.Lock()
 	defer handler.conn.wio.Unlock()
-	w, err := handler.conn.frameWriterFactory.NewFrameWriter(PingFrame)
-	if err != nil {
-		return 0, err
-	}
+	w := handler.conn.frameWriterFactory.NewFrameWriter(PingFrame)
 	n, err = w.Write(msg)
 	w.Close()
 	return n, err
@@ -334,10 +325,7 @@ func (handler *frameHandler) WritePing(msg []byte) (n int, err error) {
 func (handler *frameHandler) WritePong(msg []byte) (n int, err error) {
 	handler.conn.wio.Lock()
 	defer handler.conn.wio.Unlock()
-	w, err := handler.conn.frameWriterFactory.NewFrameWriter(PongFrame)
-	if err != nil {
-		return 0, err
-	}
+	w := handler.conn.frameWriterFactory.NewFrameWriter(PongFrame)
 	n, err = w.Write(msg)
 	w.Close()
 	return n, err
@@ -360,25 +348,14 @@ func newConn(config *Config, buf *bufio.ReadWriter, rwc io.ReadWriteCloser, requ
 	return ws
 }
 
-// generateMaskingKey generates a masking key for a frame.
-func generateMaskingKey() (maskingKey []byte, err error) {
-	maskingKey = make([]byte, 4)
-	if _, err = io.ReadFull(rand.Reader, maskingKey); err != nil {
-		return
-	}
-	return
-}
-
 // generateNonce generates a nonce consisting of a randomly selected 16-byte
 // value that has been base64-encoded.
-func generateNonce() (nonce []byte) {
+func generateNonce() []byte {
 	key := make([]byte, 16)
-	if _, err := io.ReadFull(rand.Reader, key); err != nil {
-		panic(err)
-	}
-	nonce = make([]byte, 24)
+	io.ReadFull(rand.Reader, key)
+	nonce := make([]byte, 24)
 	base64.StdEncoding.Encode(nonce, key)
-	return
+	return nonce
 }
 
 // removeZone removes IPv6 zone identifier from host.
@@ -400,17 +377,13 @@ func removeZone(host string) string {
 
 // getNonceAccept computes the base64-encoded SHA-1 of the concatenation of
 // the nonce ("Sec-WebSocket-Key" value) with the websocket GUID string.
-func getNonceAccept(nonce []byte) (expected []byte, err error) {
+func getNonceAccept(nonce []byte) []byte {
 	h := sha1.New()
-	if _, err = h.Write(nonce); err != nil {
-		return
-	}
-	if _, err = h.Write([]byte(websocketGUID)); err != nil {
-		return
-	}
-	expected = make([]byte, 28)
+	h.Write(nonce)
+	h.Write([]byte(websocketGUID))
+	expected := make([]byte, 28)
 	base64.StdEncoding.Encode(expected, h.Sum(nil))
-	return
+	return expected
 }
 
 func clientHandshake(config *Config, br *bufio.Reader, bw *bufio.Writer) (err error) {
@@ -460,10 +433,7 @@ func clientHandshake(config *Config, br *bufio.Reader, bw *bufio.Writer) (err er
 		strings.ToLower(resp.Header.Get("Connection")) != "upgrade" {
 		return ErrBadUpgrade
 	}
-	expectedAccept, err := getNonceAccept(nonce)
-	if err != nil {
-		return err
-	}
+	expectedAccept := getNonceAccept(nonce)
 	if resp.Header.Get("Sec-WebSocket-Accept") != string(expectedAccept) {
 		return ErrChallengeResponse
 	}
@@ -541,10 +511,7 @@ func (c *serverHandshaker) ReadHandshake(buf *bufio.Reader, req *http.Request) (
 			c.Protocol = append(c.Protocol, strings.TrimSpace(protocols[i]))
 		}
 	}
-	c.accept, err = getNonceAccept([]byte(key))
-	if err != nil {
-		return http.StatusInternalServerError, err
-	}
+	c.accept = getNonceAccept([]byte(key))
 	return http.StatusSwitchingProtocols, nil
 }
 
