@@ -73,7 +73,7 @@ Sec-WebSocket-Protocol: chat
 		if err != nil {
 			t.Fatal("read request", err)
 		}
-		if req.Method != "GET" {
+		if req.Method != http.MethodGet {
 			t.Errorf("request method expected GET, but got %s", req.Method)
 		}
 		if req.URL.Path != "/chat" {
@@ -139,7 +139,7 @@ Sec-WebSocket-Protocol: chat
 	if err != nil {
 		t.Fatalf("read request: %v", err)
 	}
-	if req.Method != "GET" {
+	if req.Method != http.MethodGet {
 		t.Errorf("request method expected GET, but got %q", req.Method)
 	}
 	if req.URL.Path != "/chat" {

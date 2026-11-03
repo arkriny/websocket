@@ -421,12 +421,12 @@ func clientHandshake(config *Config, br *bufio.Reader, bw *bufio.Writer) (err er
 		return err
 	}
 
-	resp, err := http.ReadResponse(br, &http.Request{Method: "GET"})
+	resp, err := http.ReadResponse(br, &http.Request{Method: http.MethodGet})
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 101 {
+	if resp.StatusCode != http.StatusSwitchingProtocols {
 		return ErrBadStatus
 	}
 	if strings.ToLower(resp.Header.Get("Upgrade")) != "websocket" ||
@@ -473,7 +473,7 @@ type serverHandshaker struct {
 // Returns http response code and error if any.
 func (c *serverHandshaker) ReadHandshake(req *http.Request) (code int, err error) {
 	c.Version = ProtocolVersionHybi13
-	if req.Method != "GET" {
+	if req.Method != http.MethodGet {
 		return http.StatusMethodNotAllowed, ErrBadRequestMethod
 	}
 	// HTTP version can be safely ignored.
