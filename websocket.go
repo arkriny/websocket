@@ -122,12 +122,6 @@ type frameReader interface {
 	Len() int
 }
 
-// frameWriter is an interface to write a WebSocket frame.
-type frameWriter interface {
-	// Writer is to write payload of the frame.
-	io.WriteCloser
-}
-
 type frameHandler interface {
 	HandleFrame(frame frameReader) (r frameReader, err error)
 	WriteClose(status int) (err error)

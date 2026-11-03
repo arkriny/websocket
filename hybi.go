@@ -247,9 +247,10 @@ type hybiFrameWriterFactory struct {
 	needMaskingKey bool
 }
 
-func (buf hybiFrameWriterFactory) NewFrameWriter(payloadType byte) (frame frameWriter, err error) {
+func (buf hybiFrameWriterFactory) NewFrameWriter(payloadType byte) (*hybiFrameWriter, error) {
 	frameHeader := &hybiFrameHeader{Fin: true, OpCode: payloadType}
 	if buf.needMaskingKey {
+		var err error
 		frameHeader.MaskingKey, err = generateMaskingKey()
 		if err != nil {
 			return nil, err

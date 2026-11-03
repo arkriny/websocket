@@ -293,7 +293,7 @@ func testHybiFrame(t *testing.T, testHeader, testPayload, testMaskedPayload []by
 	b := bytes.NewBuffer([]byte{})
 	frameWriterFactory := &hybiFrameWriterFactory{bufio.NewWriter(b), false}
 	w, _ := frameWriterFactory.NewFrameWriter(TextFrame)
-	w.(*hybiFrameWriter).header = frameHeader
+	w.header = frameHeader
 	_, err := w.Write(testPayload)
 	w.Close()
 	if err != nil {
