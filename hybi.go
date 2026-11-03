@@ -244,6 +244,7 @@ func (frame *frameWriter) Close() error { return nil }
 
 type frameWriterFactory struct {
 	*bufio.Writer
+
 	needMaskingKey bool
 }
 
@@ -466,6 +467,7 @@ func newClientConn(config *Config, buf *bufio.ReadWriter, rwc io.ReadWriteCloser
 // A serverHandshaker performs a server handshake.
 type serverHandshaker struct {
 	*Config
+
 	accept []byte
 }
 

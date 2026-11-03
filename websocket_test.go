@@ -490,6 +490,7 @@ func TestParseAuthority(t *testing.T) {
 
 type closerConn struct {
 	net.Conn
+
 	closed int // count of the number of times Close was called
 }
 

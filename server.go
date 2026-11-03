@@ -56,13 +56,13 @@ type Server struct {
 	// Config is a WebSocket configuration for new WebSocket connection.
 	Config
 
+	// Handler handles a WebSocket connection.
+	Handler
+
 	// Handshake is an optional function in WebSocket handshake.
 	// For example, you can check, or don't check Origin header.
 	// Another example, you can select config.Protocol.
 	Handshake func(*Config, *http.Request) error
-
-	// Handler handles a WebSocket connection.
-	Handler
 }
 
 // ServeHTTP implements the http.Handler interface for a WebSocket
