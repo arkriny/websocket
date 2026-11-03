@@ -65,7 +65,7 @@ type Server struct {
 	Handshake func(*Config, *http.Request) error
 }
 
-// ServeHTTP implements the http.Handler interface for a WebSocket
+// ServeHTTP implements the http.Handler interface for a WebSocket.
 func (s Server) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	s.serveWebSocket(w, req)
 }
@@ -106,7 +106,7 @@ func checkOrigin(config *Config, req *http.Request) (err error) {
 	return err
 }
 
-// ServeHTTP implements the http.Handler interface for a WebSocket
+// ServeHTTP implements the http.Handler interface for a WebSocket.
 func (h Handler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	s := Server{Handler: h, Handshake: checkOrigin}
 	s.serveWebSocket(w, req)

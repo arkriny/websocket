@@ -66,7 +66,7 @@ var (
 )
 
 // ErrFrameTooLarge is returned by Codec's Receive method if payload size
-// exceeds limit set by Conn.MaxPayloadBytes
+// exceeds limit set by Conn.MaxPayloadBytes.
 var ErrFrameTooLarge = errors.New("websocket: frame payload size exceeds limit")
 
 // Addr is an implementation of net.Addr for WebSocket.
@@ -77,7 +77,7 @@ type Addr struct {
 // Network returns the network type for a WebSocket, "websocket".
 func (addr *Addr) Network() string { return "websocket" }
 
-// Config is a WebSocket configuration
+// Config is a WebSocket configuration.
 type Config struct {
 	// A WebSocket server address.
 	Location *url.URL
