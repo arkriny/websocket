@@ -81,7 +81,7 @@ type frameReader struct {
 func (frame *frameReader) Read(msg []byte) (n int, err error) {
 	n, err = frame.reader.Read(msg)
 	if frame.header.MaskingKey != nil {
-		for i := 0; i < n; i++ {
+		for i := range n {
 			msg[i] ^= frame.header.MaskingKey[frame.pos%4]
 			frame.pos++
 		}
@@ -148,7 +148,7 @@ func (buf frameReaderFactory) NewFrameReader() (frame *frameReader, err error) {
 	case b == 127: // Payload length 7+64bits
 		lengthFields = 8
 	}
-	for i := 0; i < lengthFields; i++ {
+	for i := range lengthFields {
 		b, err = buf.ReadByte()
 		if err != nil {
 			return
@@ -215,7 +215,7 @@ func (frame *frameWriter) Write(msg []byte) (n int, err error) {
 		lengthFields = 8
 	}
 	header = append(header, b)
-	for i := 0; i < lengthFields; i++ {
+	for i := range lengthFields {
 		j := uint((lengthFields - i - 1) * 8)
 		b = byte((length >> j) & 0xff)
 		header = append(header, b)
@@ -443,7 +443,7 @@ func clientHandshake(config *Config, br *bufio.Reader, bw *bufio.Writer) (err er
 	offeredProtocol := resp.Header.Get("Sec-WebSocket-Protocol")
 	if offeredProtocol != "" {
 		protocolMatched := false
-		for i := 0; i < len(config.Protocol); i++ {
+		for i := range len(config.Protocol) {
 			if config.Protocol[i] == offeredProtocol {
 				protocolMatched = true
 				break
