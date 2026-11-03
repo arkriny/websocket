@@ -326,9 +326,6 @@ func testHybiFrame(t *testing.T, testHeader, testPayload, testMaskedPayload []by
 			}
 		}
 	}
-	if trailer := frame.TrailerReader(); trailer != nil {
-		t.Errorf("unexpected trailer %q", trailer)
-	}
 	if frameHeader.Fin != frame.header.Fin ||
 		frameHeader.OpCode != frame.header.OpCode ||
 		len(testPayload) != int(frame.header.Length) {

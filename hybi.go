@@ -103,10 +103,6 @@ func (frame *hybiFrameReader) HeaderReader() io.Reader {
 	return frame.header.data
 }
 
-// TrailerReader returns a reader to read trailer of the frame.
-// If it returns nil, there is no trailer in the frame.
-func (frame *hybiFrameReader) TrailerReader() io.Reader { return nil }
-
 // Len returns total length of the frame, including header and trailer.
 func (frame *hybiFrameReader) Len() (n int) { return frame.length }
 
