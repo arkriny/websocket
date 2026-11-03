@@ -136,20 +136,10 @@ type frameReader interface {
 	Len() int
 }
 
-// frameReaderFactory is an interface to creates new frame reader.
-type frameReaderFactory interface {
-	NewFrameReader() (r frameReader, err error)
-}
-
 // frameWriter is an interface to write a WebSocket frame.
 type frameWriter interface {
 	// Writer is to write payload of the frame.
 	io.WriteCloser
-}
-
-// frameWriterFactory is an interface to create new frame writer.
-type frameWriterFactory interface {
-	NewFrameWriter(payloadType byte) (w frameWriter, err error)
 }
 
 type frameHandler interface {
@@ -167,12 +157,12 @@ type Conn struct {
 	buf *bufio.ReadWriter
 	rwc io.ReadWriteCloser
 
-	rio sync.Mutex
-	frameReaderFactory
+	rio                sync.Mutex
+	frameReaderFactory hybiFrameReaderFactory
 	frameReader
 
-	wio sync.Mutex
-	frameWriterFactory
+	wio                sync.Mutex
+	frameWriterFactory hybiFrameWriterFactory
 
 	frameHandler
 	PayloadType        byte
