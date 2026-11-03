@@ -12,7 +12,7 @@ import (
 )
 
 func newServerConn(rwc io.ReadWriteCloser, buf *bufio.ReadWriter, req *http.Request, config *Config, handshake func(*Config, *http.Request) error) (conn *Conn, err error) {
-	var hs serverHandshaker = &hybiServerHandshaker{Config: config}
+	hs := &hybiServerHandshaker{Config: config}
 	code, err := hs.ReadHandshake(buf.Reader, req)
 	if err == ErrBadWebSocketVersion {
 		fmt.Fprintf(buf, "HTTP/1.1 %03d %s\r\n", code, http.StatusText(code))

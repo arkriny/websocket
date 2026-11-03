@@ -103,20 +103,6 @@ type Config struct {
 	handshakeData map[string]string
 }
 
-// serverHandshaker is an interface to handle WebSocket server side handshake.
-type serverHandshaker interface {
-	// ReadHandshake reads handshake request message from client.
-	// Returns http response code and error if any.
-	ReadHandshake(buf *bufio.Reader, req *http.Request) (code int, err error)
-
-	// AcceptHandshake accepts the client handshake request and sends
-	// handshake response back to client.
-	AcceptHandshake(buf *bufio.Writer) (err error)
-
-	// NewServerConn creates a new WebSocket connection.
-	NewServerConn(buf *bufio.ReadWriter, rwc io.ReadWriteCloser, request *http.Request) (conn *Conn)
-}
-
 // frameReader is an interface to read a WebSocket frame.
 type frameReader interface {
 	// Reader is to read payload of the frame.

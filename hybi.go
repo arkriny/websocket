@@ -487,6 +487,8 @@ type hybiServerHandshaker struct {
 	accept []byte
 }
 
+// ReadHandshake reads handshake request message from client.
+// Returns http response code and error if any.
 func (c *hybiServerHandshaker) ReadHandshake(buf *bufio.Reader, req *http.Request) (code int, err error) {
 	c.Version = ProtocolVersionHybi13
 	if req.Method != "GET" {
@@ -548,6 +550,8 @@ func Origin(config *Config, req *http.Request) (*url.URL, error) {
 	return url.ParseRequestURI(origin)
 }
 
+// AcceptHandshake accepts the client handshake request and sends
+// handshake response back to client.
 func (c *hybiServerHandshaker) AcceptHandshake(buf *bufio.Writer) (err error) {
 	if len(c.Protocol) > 0 {
 		if len(c.Protocol) != 1 {
@@ -573,6 +577,7 @@ func (c *hybiServerHandshaker) AcceptHandshake(buf *bufio.Writer) (err error) {
 	return buf.Flush()
 }
 
+// NewServerConn creates a new WebSocket connection.
 func (c *hybiServerHandshaker) NewServerConn(buf *bufio.ReadWriter, rwc io.ReadWriteCloser, request *http.Request) *Conn {
 	return newHybiServerConn(c.Config, buf, rwc, request)
 }
