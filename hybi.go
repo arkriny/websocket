@@ -354,8 +354,8 @@ func newHybiConn(config *Config, buf *bufio.ReadWriter, rwc io.ReadWriteCloser, 
 		frameReaderFactory: hybiFrameReaderFactory{buf.Reader},
 		frameWriterFactory: hybiFrameWriterFactory{
 			buf.Writer, request == nil},
-		PayloadType:        TextFrame,
-		defaultCloseStatus: closeStatusNormal}
+		PayloadType: TextFrame,
+	}
 	ws.frameHandler = &hybiFrameHandler{conn: ws}
 	return ws
 }

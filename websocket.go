@@ -120,9 +120,8 @@ type Conn struct {
 	wio                sync.Mutex
 	frameWriterFactory hybiFrameWriterFactory
 
-	frameHandler       *hybiFrameHandler
-	PayloadType        byte
-	defaultCloseStatus int
+	frameHandler *hybiFrameHandler
+	PayloadType  byte
 
 	// MaxPayloadBytes limits the size of frame payload received over Conn
 	// by Codec's Receive method. If zero, DefaultMaxPayloadBytes is used.
@@ -175,7 +174,7 @@ func (ws *Conn) Write(msg []byte) (n int, err error) {
 
 // Close implements the io.Closer interface.
 func (ws *Conn) Close() error {
-	err := ws.frameHandler.WriteClose(ws.defaultCloseStatus)
+	err := ws.frameHandler.WriteClose(closeStatusNormal)
 	err1 := ws.rwc.Close()
 	if err != nil {
 		return err
