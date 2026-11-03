@@ -52,25 +52,9 @@ func countServer(ws *Conn) {
 	}
 }
 
-type testCtrlAndDataHandler struct {
-	hybiFrameHandler
-}
-
-func (h *testCtrlAndDataHandler) WritePing(b []byte) (int, error) {
-	h.hybiFrameHandler.conn.wio.Lock()
-	defer h.hybiFrameHandler.conn.wio.Unlock()
-	w, err := h.hybiFrameHandler.conn.frameWriterFactory.NewFrameWriter(PingFrame)
-	if err != nil {
-		return 0, err
-	}
-	n, err := w.Write(b)
-	w.Close()
-	return n, err
-}
-
 func ctrlAndDataServer(ws *Conn) {
 	defer ws.Close()
-	h := &testCtrlAndDataHandler{hybiFrameHandler: hybiFrameHandler{conn: ws}}
+	h := &hybiFrameHandler{conn: ws}
 	ws.frameHandler = h
 
 	go func() {
@@ -581,7 +565,7 @@ func TestCtrlAndData(t *testing.T) {
 	}
 	defer ws.Close()
 
-	h := &testCtrlAndDataHandler{hybiFrameHandler: hybiFrameHandler{conn: ws}}
+	h := &hybiFrameHandler{conn: ws}
 	ws.frameHandler = h
 
 	b := make([]byte, 128)
