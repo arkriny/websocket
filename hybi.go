@@ -471,7 +471,7 @@ type serverHandshaker struct {
 
 // ReadHandshake reads handshake request message from client.
 // Returns http response code and error if any.
-func (c *serverHandshaker) ReadHandshake(buf *bufio.Reader, req *http.Request) (code int, err error) {
+func (c *serverHandshaker) ReadHandshake(req *http.Request) (code int, err error) {
 	c.Version = ProtocolVersionHybi13
 	if req.Method != "GET" {
 		return http.StatusMethodNotAllowed, ErrBadRequestMethod

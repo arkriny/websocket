@@ -181,7 +181,7 @@ Sec-WebSocket-Version: 13
 	if err != nil {
 		t.Fatal("request", err)
 	}
-	code, err := handshaker.ReadHandshake(br, req)
+	code, err := handshaker.ReadHandshake(req)
 	if err != nil {
 		t.Errorf("handshake failed: %v", err)
 	}
@@ -230,7 +230,7 @@ Sec-WebSocket-Version: 13
 	if err != nil {
 		t.Fatal("request", err)
 	}
-	code, err := handshaker.ReadHandshake(br, req)
+	code, err := handshaker.ReadHandshake(req)
 	if err != nil {
 		t.Errorf("handshake failed: %v", err)
 	}
@@ -276,7 +276,7 @@ Sec-WebSocket-Version: 9
 	if err != nil {
 		t.Fatal("request", err)
 	}
-	code, err := handshaker.ReadHandshake(br, req)
+	code, err := handshaker.ReadHandshake(req)
 	if err != ErrBadWebSocketVersion {
 		t.Errorf("handshake expected err %q but got %q", ErrBadWebSocketVersion, err)
 	}
@@ -570,7 +570,7 @@ Sec-WebSocket-Version: 13
 	if err != nil {
 		t.Fatal("request", err)
 	}
-	code, err := handshaker.ReadHandshake(br, req)
+	code, err := handshaker.ReadHandshake(req)
 	if err != nil {
 		t.Errorf("handshake failed: %v", err)
 	}
