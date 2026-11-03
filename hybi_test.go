@@ -403,7 +403,7 @@ func TestHybiClientRead(t *testing.T) {
 		0x81, 0x05, 'w', 'o', 'r', 'l', 'd'}
 	br := bufio.NewReader(bytes.NewBuffer(wireData))
 	bw := bufio.NewWriter(bytes.NewBuffer([]byte{}))
-	conn := newConn(newConfig(t, "/"), bufio.NewReadWriter(br, bw), nil, nil)
+	conn := newConn(newConfig("/"), bufio.NewReadWriter(br, bw), nil, nil)
 
 	msg := make([]byte, 512)
 	n, err := conn.Read(msg)
@@ -441,7 +441,7 @@ func TestHybiShortRead(t *testing.T) {
 		0x81, 0x05, 'w', 'o', 'r', 'l', 'd'}
 	br := bufio.NewReader(bytes.NewBuffer(wireData))
 	bw := bufio.NewWriter(bytes.NewBuffer([]byte{}))
-	conn := newConn(newConfig(t, "/"), bufio.NewReadWriter(br, bw), nil, nil)
+	conn := newConn(newConfig("/"), bufio.NewReadWriter(br, bw), nil, nil)
 
 	step := 0
 	pos := 0
@@ -485,7 +485,7 @@ func TestHybiServerRead(t *testing.T) {
 	}
 	br := bufio.NewReader(bytes.NewBuffer(wireData))
 	bw := bufio.NewWriter(bytes.NewBuffer([]byte{}))
-	conn := newConn(newConfig(t, "/"), bufio.NewReadWriter(br, bw), nil, new(http.Request))
+	conn := newConn(newConfig("/"), bufio.NewReadWriter(br, bw), nil, new(http.Request))
 
 	expected := [][]byte{[]byte("hello"), []byte("world")}
 
@@ -525,7 +525,7 @@ func TestHybiServerReadWithoutMasking(t *testing.T) {
 	wireData := []byte{0x81, 0x05, 'h', 'e', 'l', 'l', 'o'}
 	br := bufio.NewReader(bytes.NewBuffer(wireData))
 	bw := bufio.NewWriter(bytes.NewBuffer([]byte{}))
-	conn := newConn(newConfig(t, "/"), bufio.NewReadWriter(br, bw), nil, new(http.Request))
+	conn := newConn(newConfig("/"), bufio.NewReadWriter(br, bw), nil, new(http.Request))
 	// server MUST close the connection upon receiving a non-masked frame.
 	msg := make([]byte, 512)
 	_, err := conn.Read(msg)
@@ -540,7 +540,7 @@ func TestHybiClientReadWithMasking(t *testing.T) {
 	}
 	br := bufio.NewReader(bytes.NewBuffer(wireData))
 	bw := bufio.NewWriter(bytes.NewBuffer([]byte{}))
-	conn := newConn(newConfig(t, "/"), bufio.NewReadWriter(br, bw), nil, nil)
+	conn := newConn(newConfig("/"), bufio.NewReadWriter(br, bw), nil, nil)
 
 	// client MUST close the connection upon receiving a masked frame.
 	msg := make([]byte, 512)
