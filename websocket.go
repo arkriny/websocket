@@ -238,12 +238,12 @@ func (ws *Conn) Request() *http.Request { return ws.request }
 
 // Codec represents a symmetric pair of functions that implement a codec.
 type Codec struct {
-	Marshal   func(v interface{}) (data []byte, payloadType byte, err error)
-	Unmarshal func(data []byte, payloadType byte, v interface{}) (err error)
+	Marshal   func(v any) (data []byte, payloadType byte, err error)
+	Unmarshal func(data []byte, payloadType byte, v any) (err error)
 }
 
 // Send sends v marshaled by cd.Marshal as single frame to ws.
-func (cd Codec) Send(ws *Conn, v interface{}) (err error) {
+func (cd Codec) Send(ws *Conn, v any) (err error) {
 	data, payloadType, err := cd.Marshal(v)
 	if err != nil {
 		return err
@@ -262,7 +262,7 @@ func (cd Codec) Send(ws *Conn, v interface{}) (err error) {
 // limit, ErrFrameTooLarge is returned; in this case frame is not read off wire
 // completely. The next call to Receive would read and discard leftover data of
 // previous oversized frame before processing next frame.
-func (cd Codec) Receive(ws *Conn, v interface{}) (err error) {
+func (cd Codec) Receive(ws *Conn, v any) (err error) {
 	ws.rio.Lock()
 	defer ws.rio.Unlock()
 	if ws.frameReader != nil {
@@ -305,7 +305,7 @@ again:
 	return cd.Unmarshal(data, payloadType, v)
 }
 
-func marshal(v interface{}) (msg []byte, payloadType byte, err error) {
+func marshal(v any) (msg []byte, payloadType byte, err error) {
 	switch data := v.(type) {
 	case string:
 		return []byte(data), TextFrame, nil
@@ -315,7 +315,7 @@ func marshal(v interface{}) (msg []byte, payloadType byte, err error) {
 	return nil, UnknownFrame, ErrNotSupported
 }
 
-func unmarshal(msg []byte, payloadType byte, v interface{}) (err error) {
+func unmarshal(msg []byte, payloadType byte, v any) (err error) {
 	switch data := v.(type) {
 	case *string:
 		*data = string(msg)
@@ -354,12 +354,12 @@ Trivial usage:
 */
 var Message = Codec{marshal, unmarshal}
 
-func jsonMarshal(v interface{}) (msg []byte, payloadType byte, err error) {
+func jsonMarshal(v any) (msg []byte, payloadType byte, err error) {
 	msg, err = json.Marshal(v)
 	return msg, TextFrame, err
 }
 
-func jsonUnmarshal(msg []byte, payloadType byte, v interface{}) (err error) {
+func jsonUnmarshal(msg []byte, payloadType byte, v any) (err error) {
 	return json.Unmarshal(msg, v)
 }
 

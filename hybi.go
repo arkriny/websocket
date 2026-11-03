@@ -82,7 +82,7 @@ func (frame *frameReader) Read(msg []byte) (n int, err error) {
 	n, err = frame.reader.Read(msg)
 	if frame.header.MaskingKey != nil {
 		for i := 0; i < n; i++ {
-			msg[i] = msg[i] ^ frame.header.MaskingKey[frame.pos%4]
+			msg[i] ^= frame.header.MaskingKey[frame.pos%4]
 			frame.pos++
 		}
 	}
@@ -125,7 +125,7 @@ func (buf frameReaderFactory) NewFrameReader() (frame *frameReader, err error) {
 	}
 	header = append(header, b)
 	frame.header.Fin = ((header[0] >> 7) & 1) != 0
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		j := uint(6 - i)
 		frame.header.Rsv[i] = ((header[0] >> j) & 1) != 0
 	}
@@ -161,7 +161,7 @@ func (buf frameReaderFactory) NewFrameReader() (frame *frameReader, err error) {
 	}
 	if mask {
 		// Masking key. 4 bytes.
-		for i := 0; i < 4; i++ {
+		for range 4 {
 			b, err = buf.ReadByte()
 			if err != nil {
 				return
@@ -189,7 +189,7 @@ func (frame *frameWriter) Write(msg []byte) (n int, err error) {
 	if frame.header.Fin {
 		b |= 0x80
 	}
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if frame.header.Rsv[i] {
 			j := uint(6 - i)
 			b |= 1 << j
@@ -506,9 +506,8 @@ func (c *serverHandshaker) ReadHandshake(req *http.Request) (code int, err error
 	}
 	protocol := strings.TrimSpace(req.Header.Get("Sec-WebSocket-Protocol"))
 	if protocol != "" {
-		protocols := strings.Split(protocol, ",")
-		for i := 0; i < len(protocols); i++ {
-			c.Protocol = append(c.Protocol, strings.TrimSpace(protocols[i]))
+		for p := range strings.SplitSeq(protocol, ",") {
+			c.Protocol = append(c.Protocol, strings.TrimSpace(p))
 		}
 	}
 	c.accept = getNonceAccept([]byte(key))
