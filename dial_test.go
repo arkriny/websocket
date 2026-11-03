@@ -20,6 +20,7 @@ import (
 // This test depend on Go 1.3+ because in earlier versions the Dialer won't be
 // used in TLS connections and a timeout won't be triggered.
 func TestDialConfigTLSWithDialer(t *testing.T) {
+	t.Parallel()
 	tlsServer := httptest.NewTLSServer(nil)
 	tlsServerAddr := tlsServer.Listener.Addr().String()
 	log.Print("Test TLS WebSocket server listening on ", tlsServerAddr)
