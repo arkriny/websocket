@@ -79,8 +79,8 @@ type frameReader struct {
 	length int
 }
 
-func (frame *frameReader) Read(msg []byte) (n int, err error) {
-	n, err = frame.reader.Read(msg)
+func (frame *frameReader) Read(msg []byte) (int, error) {
+	n, err := frame.reader.Read(msg)
 	if frame.header.MaskingKey != nil {
 		for i := range n {
 			msg[i] ^= frame.header.MaskingKey[frame.pos%4]
@@ -105,7 +105,7 @@ func (frame *frameReader) HeaderReader() io.Reader {
 }
 
 // Len returns total length of the frame, including header and trailer.
-func (frame *frameReader) Len() (n int) { return frame.length }
+func (frame *frameReader) Len() int { return frame.length }
 
 // A frameReaderFactory creates new frame reader based on its frame type.
 type frameReaderFactory struct {
@@ -115,14 +115,13 @@ type frameReaderFactory struct {
 // NewFrameReader reads a frame header from the connection, and creates new reader for the frame.
 // See Section 5.2 Base Framing protocol for detail.
 // http://tools.ietf.org/html/draft-ietf-hybi-thewebsocketprotocol-17#section-5.2
-func (buf frameReaderFactory) NewFrameReader() (frame *frameReader, err error) {
-	frame = new(frameReader)
+func (buf frameReaderFactory) NewFrameReader() (*frameReader, error) {
+	var frame frameReader
 	var header []byte
-	var b byte
 	// First byte. FIN/RSV1/RSV2/RSV3/OpCode(4bits)
-	b, err = buf.ReadByte()
+	b, err := buf.ReadByte()
 	if err != nil {
-		return
+		return nil, err
 	}
 	header = append(header, b)
 	frame.header.Fin = ((header[0] >> 7) & 1) != 0
@@ -135,7 +134,7 @@ func (buf frameReaderFactory) NewFrameReader() (frame *frameReader, err error) {
 	// Second byte. Mask/Payload len(7bits)
 	b, err = buf.ReadByte()
 	if err != nil {
-		return
+		return nil, err
 	}
 	header = append(header, b)
 	mask := (b & 0x80) != 0
@@ -150,9 +149,9 @@ func (buf frameReaderFactory) NewFrameReader() (frame *frameReader, err error) {
 		lengthFields = 8
 	}
 	for i := range lengthFields {
-		b, err = buf.ReadByte()
+		b, err := buf.ReadByte()
 		if err != nil {
-			return
+			return nil, err
 		}
 		if lengthFields == 8 && i == 0 { // MSB must be zero when 7+64 bits
 			b &= 0x7f
@@ -163,9 +162,9 @@ func (buf frameReaderFactory) NewFrameReader() (frame *frameReader, err error) {
 	if mask {
 		// Masking key. 4 bytes.
 		for range 4 {
-			b, err = buf.ReadByte()
+			b, err := buf.ReadByte()
 			if err != nil {
-				return
+				return nil, err
 			}
 			header = append(header, b)
 			frame.header.MaskingKey = append(frame.header.MaskingKey, b)
@@ -174,7 +173,7 @@ func (buf frameReaderFactory) NewFrameReader() (frame *frameReader, err error) {
 	frame.reader = io.LimitReader(buf.Reader, frame.header.Length)
 	frame.header.data = bytes.NewBuffer(header)
 	frame.length = len(header) + int(frame.header.Length)
-	return
+	return &frame, nil
 }
 
 // A frameWriter is a writer for frame.
@@ -184,7 +183,7 @@ type frameWriter struct {
 	header *frameHeader
 }
 
-func (frame *frameWriter) Write(msg []byte) (n int, err error) {
+func (frame *frameWriter) Write(msg []byte) (int, error) {
 	var header []byte
 	var b byte
 	if frame.header.Fin {
@@ -232,12 +231,12 @@ func (frame *frameWriter) Write(msg []byte) (n int, err error) {
 			data[i] = msg[i] ^ frame.header.MaskingKey[i%4]
 		}
 		frame.writer.Write(data)
-		err = frame.writer.Flush()
+		err := frame.writer.Flush()
 		return length, err
 	}
 	frame.writer.Write(header)
 	frame.writer.Write(msg)
-	err = frame.writer.Flush()
+	err := frame.writer.Flush()
 	return length, err
 }
 
@@ -304,33 +303,31 @@ func (handler *frameHandler) HandleFrame(frame *frameReader) (*frameReader, erro
 	return frame, nil
 }
 
-func (handler *frameHandler) WriteClose(status int) (err error) {
+func (handler *frameHandler) WriteClose(status int) error {
 	handler.conn.wio.Lock()
 	defer handler.conn.wio.Unlock()
 	w := handler.conn.frameWriterFactory.NewFrameWriter(CloseFrame)
+	defer w.Close()
 	msg := make([]byte, 2)
 	binary.BigEndian.PutUint16(msg, uint16(status))
-	_, err = w.Write(msg)
-	w.Close()
+	_, err := w.Write(msg)
 	return err
 }
 
-func (handler *frameHandler) WritePing(msg []byte) (n int, err error) {
+func (handler *frameHandler) WritePing(msg []byte) (int, error) {
 	handler.conn.wio.Lock()
 	defer handler.conn.wio.Unlock()
 	w := handler.conn.frameWriterFactory.NewFrameWriter(PingFrame)
-	n, err = w.Write(msg)
-	w.Close()
-	return n, err
+	defer w.Close()
+	return w.Write(msg)
 }
 
-func (handler *frameHandler) WritePong(msg []byte) (n int, err error) {
+func (handler *frameHandler) WritePong(msg []byte) (int, error) {
 	handler.conn.wio.Lock()
 	defer handler.conn.wio.Unlock()
 	w := handler.conn.frameWriterFactory.NewFrameWriter(PongFrame)
-	n, err = w.Write(msg)
-	w.Close()
-	return n, err
+	defer w.Close()
+	return w.Write(msg)
 }
 
 // newConn creates a new WebSocket connection.
@@ -388,7 +385,7 @@ func getNonceAccept(nonce []byte) []byte {
 	return expected
 }
 
-func clientHandshake(config *Config, br *bufio.Reader, bw *bufio.Writer) (err error) {
+func clientHandshake(config *Config, br *bufio.Reader, bw *bufio.Writer) error {
 	bw.WriteString("GET " + config.Location.RequestURI() + " HTTP/1.1\r\n")
 
 	// According to RFC 6874, an HTTP client, proxy, or other
@@ -413,13 +410,12 @@ func clientHandshake(config *Config, br *bufio.Reader, bw *bufio.Writer) (err er
 		bw.WriteString("Sec-WebSocket-Protocol: " + strings.Join(config.Protocol, ", ") + "\r\n")
 	}
 	// TODO(ukai): send Sec-WebSocket-Extensions.
-	err = config.Header.WriteSubset(bw, handshakeHeader)
-	if err != nil {
+	if err := config.Header.WriteSubset(bw, handshakeHeader); err != nil {
 		return err
 	}
 
 	bw.WriteString("\r\n")
-	if err = bw.Flush(); err != nil {
+	if err := bw.Flush(); err != nil {
 		return err
 	}
 
@@ -474,7 +470,7 @@ type serverHandshaker struct {
 
 // ReadHandshake reads handshake request message from client.
 // Returns http response code and error if any.
-func (c *serverHandshaker) ReadHandshake(req *http.Request) (code int, err error) {
+func (c *serverHandshaker) ReadHandshake(req *http.Request) (int, error) {
 	c.Version = ProtocolVersionHybi13
 	if req.Method != http.MethodGet {
 		return http.StatusMethodNotAllowed, ErrBadRequestMethod
@@ -503,6 +499,7 @@ func (c *serverHandshaker) ReadHandshake(req *http.Request) (code int, err error
 	} else {
 		scheme = "ws"
 	}
+	var err error
 	c.Location, err = url.ParseRequestURI(scheme + "://" + req.Host + req.URL.RequestURI())
 	if err != nil {
 		return http.StatusBadRequest, err
@@ -533,7 +530,7 @@ func Origin(config *Config, req *http.Request) (*url.URL, error) {
 
 // AcceptHandshake accepts the client handshake request and sends
 // handshake response back to client.
-func (c *serverHandshaker) AcceptHandshake(buf *bufio.Writer) (err error) {
+func (c *serverHandshaker) AcceptHandshake(buf *bufio.Writer) error {
 	if len(c.Protocol) > 0 {
 		if len(c.Protocol) != 1 {
 			// You need choose a Protocol in Handshake func in Server.
@@ -549,8 +546,7 @@ func (c *serverHandshaker) AcceptHandshake(buf *bufio.Writer) (err error) {
 	}
 	// TODO(ukai): send Sec-WebSocket-Extensions.
 	if c.Header != nil {
-		err := c.Header.WriteSubset(buf, handshakeHeader)
-		if err != nil {
+		if err := c.Header.WriteSubset(buf, handshakeHeader); err != nil {
 			return err
 		}
 	}

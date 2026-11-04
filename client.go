@@ -26,32 +26,32 @@ func (e *DialError) Error() string {
 }
 
 // NewConfig creates a new WebSocket config for client connection.
-func NewConfig(server, origin string) (config *Config, err error) {
-	config = new(Config)
-	config.Version = ProtocolVersionHybi13
-	config.Location, err = url.ParseRequestURI(server)
+func NewConfig(server, origin string) (*Config, error) {
+	location, err := url.ParseRequestURI(server)
 	if err != nil {
-		return
+		return nil, err
 	}
-	config.Origin, err = url.ParseRequestURI(origin)
+	originURL, err := url.ParseRequestURI(origin)
 	if err != nil {
-		return
+		return nil, err
 	}
-	config.Header = http.Header(make(map[string][]string))
-	return
+	return &Config{
+		Location: location,
+		Origin:   originURL,
+		Version:  ProtocolVersionHybi13,
+		Header:   http.Header(make(map[string][]string)),
+	}, nil
 }
 
 // NewClient creates a new WebSocket client connection over rwc.
-func NewClient(config *Config, rwc io.ReadWriteCloser) (ws *Conn, err error) {
+func NewClient(config *Config, rwc io.ReadWriteCloser) (*Conn, error) {
 	br := bufio.NewReader(rwc)
 	bw := bufio.NewWriter(rwc)
-	err = clientHandshake(config, br, bw)
-	if err != nil {
-		return
+	if err := clientHandshake(config, br, bw); err != nil {
+		return nil, err
 	}
 	buf := bufio.NewReadWriter(br, bw)
-	ws = newClientConn(config, buf, rwc)
-	return
+	return newClientConn(config, buf, rwc), nil
 }
 
 // Dial opens a new client connection to a WebSocket.
@@ -81,7 +81,7 @@ func parseAuthority(location *url.URL) string {
 }
 
 // DialConfig opens a new client connection to a WebSocket with a config.
-func DialConfig(config *Config) (ws *Conn, err error) {
+func DialConfig(config *Config) (*Conn, error) {
 	return config.DialContext(context.Background())
 }
 

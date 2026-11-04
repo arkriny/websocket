@@ -12,7 +12,7 @@ import (
 	"net/http"
 )
 
-func newServerConn(rwc io.ReadWriteCloser, buf *bufio.ReadWriter, req *http.Request, config *Config, handshake func(*Config, *http.Request) error) (conn *Conn, err error) {
+func newServerConn(rwc io.ReadWriteCloser, buf *bufio.ReadWriter, req *http.Request, config *Config, handshake func(*Config, *http.Request) error) (*Conn, error) {
 	hs := &serverHandshaker{Config: config}
 	code, err := hs.ReadHandshake(req)
 	if errors.Is(err, ErrBadWebSocketVersion) {
@@ -21,14 +21,14 @@ func newServerConn(rwc io.ReadWriteCloser, buf *bufio.ReadWriter, req *http.Requ
 		buf.WriteString("\r\n")
 		buf.WriteString(err.Error())
 		buf.Flush()
-		return
+		return nil, err
 	}
 	if err != nil {
 		fmt.Fprintf(buf, "HTTP/1.1 %03d %s\r\n", code, http.StatusText(code))
 		buf.WriteString("\r\n")
 		buf.WriteString(err.Error())
 		buf.Flush()
-		return
+		return nil, err
 	}
 	if handshake != nil {
 		err = handshake(config, req)
@@ -37,7 +37,7 @@ func newServerConn(rwc io.ReadWriteCloser, buf *bufio.ReadWriter, req *http.Requ
 			fmt.Fprintf(buf, "HTTP/1.1 %03d %s\r\n", code, http.StatusText(code))
 			buf.WriteString("\r\n")
 			buf.Flush()
-			return
+			return nil, err
 		}
 	}
 	err = hs.AcceptHandshake(buf.Writer)
@@ -46,10 +46,10 @@ func newServerConn(rwc io.ReadWriteCloser, buf *bufio.ReadWriter, req *http.Requ
 		fmt.Fprintf(buf, "HTTP/1.1 %03d %s\r\n", code, http.StatusText(code))
 		buf.WriteString("\r\n")
 		buf.Flush()
-		return
+		return nil, err
 	}
-	conn = hs.NewServerConn(buf, rwc, req)
-	return
+	conn := hs.NewServerConn(buf, rwc, req)
+	return conn, nil
 }
 
 // Server represents a server of a WebSocket.

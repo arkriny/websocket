@@ -133,7 +133,7 @@ type Conn struct {
 // if msg is not large enough for the frame data, it fills the msg and next Read
 // will read the rest of the frame data.
 // it reads Text frame or Binary frame.
-func (ws *Conn) Read(msg []byte) (n int, err error) {
+func (ws *Conn) Read(msg []byte) (int, error) {
 	ws.rio.Lock()
 	defer ws.rio.Unlock()
 again:
@@ -150,7 +150,7 @@ again:
 			goto again
 		}
 	}
-	n, err = ws.frameReader.Read(msg)
+	n, err := ws.frameReader.Read(msg)
 	if errors.Is(err, io.EOF) {
 		ws.frameReader = nil
 		goto again
@@ -160,13 +160,12 @@ again:
 
 // Write implements the io.Writer interface:
 // it writes data as a frame to the WebSocket connection.
-func (ws *Conn) Write(msg []byte) (n int, err error) {
+func (ws *Conn) Write(msg []byte) (int, error) {
 	ws.wio.Lock()
 	defer ws.wio.Unlock()
 	w := ws.frameWriterFactory.NewFrameWriter(ws.PayloadType)
-	n, err = w.Write(msg)
-	w.Close()
-	return n, err
+	defer w.Close()
+	return w.Write(msg)
 }
 
 // Close implements the io.Closer interface.
@@ -243,7 +242,7 @@ type Codec struct {
 }
 
 // Send sends v marshaled by cd.Marshal as single frame to ws.
-func (cd Codec) Send(ws *Conn, v any) (err error) {
+func (cd Codec) Send(ws *Conn, v any) error {
 	data, payloadType, err := cd.Marshal(v)
 	if err != nil {
 		return err
@@ -251,8 +250,8 @@ func (cd Codec) Send(ws *Conn, v any) (err error) {
 	ws.wio.Lock()
 	defer ws.wio.Unlock()
 	w := ws.frameWriterFactory.NewFrameWriter(payloadType)
+	defer w.Close()
 	_, err = w.Write(data)
-	w.Close()
 	return err
 }
 
@@ -262,12 +261,11 @@ func (cd Codec) Send(ws *Conn, v any) (err error) {
 // limit, ErrFrameTooLarge is returned; in this case frame is not read off wire
 // completely. The next call to Receive would read and discard leftover data of
 // previous oversized frame before processing next frame.
-func (cd Codec) Receive(ws *Conn, v any) (err error) {
+func (cd Codec) Receive(ws *Conn, v any) error {
 	ws.rio.Lock()
 	defer ws.rio.Unlock()
 	if ws.frameReader != nil {
-		_, err = io.Copy(io.Discard, ws.frameReader)
-		if err != nil {
+		if _, err := io.Copy(io.Discard, ws.frameReader); err != nil {
 			return err
 		}
 		ws.frameReader = nil

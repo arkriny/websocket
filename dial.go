@@ -10,20 +10,18 @@ import (
 	"net"
 )
 
-func dialWithDialer(ctx context.Context, dialer *net.Dialer, config *Config) (conn net.Conn, err error) {
+func dialWithDialer(ctx context.Context, dialer *net.Dialer, config *Config) (net.Conn, error) {
 	switch config.Location.Scheme {
 	case "ws":
-		conn, err = dialer.DialContext(ctx, "tcp", parseAuthority(config.Location))
+		return dialer.DialContext(ctx, "tcp", parseAuthority(config.Location))
 
 	case "wss":
 		tlsDialer := &tls.Dialer{
 			NetDialer: dialer,
 			Config:    config.TlsConfig,
 		}
-
-		conn, err = tlsDialer.DialContext(ctx, "tcp", parseAuthority(config.Location))
+		return tlsDialer.DialContext(ctx, "tcp", parseAuthority(config.Location))
 	default:
-		err = ErrBadScheme
+		return nil, ErrBadScheme
 	}
-	return
 }
