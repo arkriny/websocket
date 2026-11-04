@@ -26,9 +26,7 @@ import (
 )
 
 const (
-	ProtocolVersionHybi13    = 13
-	ProtocolVersionHybi      = ProtocolVersionHybi13
-	SupportedProtocolVersion = "13"
+	protocolVersion = "13"
 
 	ContinuationFrame = 0
 	TextFrame         = 1
@@ -42,7 +40,6 @@ const (
 )
 
 var (
-	ErrBadProtocolVersion   = errors.New("bad protocol version")
 	ErrBadScheme            = errors.New("bad scheme")
 	ErrBadStatus            = errors.New("bad status")
 	ErrBadUpgrade           = errors.New("missing or bad upgrade")
@@ -80,9 +77,6 @@ type Config struct {
 
 	// WebSocket subprotocols.
 	Protocol []string
-
-	// WebSocket protocol version.
-	Version int
 
 	// TLS config for secure WebSocket (wss).
 	TlsConfig *tls.Config

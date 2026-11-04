@@ -17,7 +17,7 @@ func newServerConn(rwc io.ReadWriteCloser, buf *bufio.ReadWriter, req *http.Requ
 	code, err := hs.ReadHandshake(req)
 	if errors.Is(err, ErrBadWebSocketVersion) {
 		fmt.Fprintf(buf, "HTTP/1.1 %03d %s\r\n", code, http.StatusText(code))
-		fmt.Fprintf(buf, "Sec-WebSocket-Version: %s\r\n", SupportedProtocolVersion)
+		fmt.Fprintf(buf, "Sec-WebSocket-Version: %s\r\n", protocolVersion)
 		buf.WriteString("\r\n")
 		buf.WriteString(err.Error())
 		buf.Flush()

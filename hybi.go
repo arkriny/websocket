@@ -15,7 +15,6 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -401,11 +400,7 @@ func clientHandshake(config *Config, br *bufio.Reader, bw *bufio.Writer) error {
 	bw.WriteString("Sec-WebSocket-Key: " + string(nonce) + "\r\n")
 	bw.WriteString("Origin: " + strings.ToLower(config.Origin.String()) + "\r\n")
 
-	if config.Version != ProtocolVersionHybi13 {
-		return ErrBadProtocolVersion
-	}
-
-	bw.WriteString("Sec-WebSocket-Version: " + fmt.Sprintf("%d", config.Version) + "\r\n")
+	bw.WriteString("Sec-WebSocket-Version: " + protocolVersion + "\r\n")
 	if len(config.Protocol) > 0 {
 		bw.WriteString("Sec-WebSocket-Protocol: " + strings.Join(config.Protocol, ", ") + "\r\n")
 	}
@@ -471,7 +466,6 @@ type serverHandshaker struct {
 // ReadHandshake reads handshake request message from client.
 // Returns http response code and error if any.
 func (c *serverHandshaker) ReadHandshake(req *http.Request) (int, error) {
-	c.Version = ProtocolVersionHybi13
 	if req.Method != http.MethodGet {
 		return http.StatusMethodNotAllowed, ErrBadRequestMethod
 	}
@@ -486,11 +480,8 @@ func (c *serverHandshaker) ReadHandshake(req *http.Request) (int, error) {
 	if key == "" {
 		return http.StatusBadRequest, ErrChallengeResponse
 	}
-	version := req.Header.Get("Sec-WebSocket-Version")
-	switch version {
-	case "13":
-		c.Version = ProtocolVersionHybi13
-	default:
+	ver := req.Header.Get("Sec-WebSocket-Version")
+	if ver != protocolVersion {
 		return http.StatusBadRequest, ErrBadWebSocketVersion
 	}
 	var scheme string
@@ -517,11 +508,7 @@ func (c *serverHandshaker) ReadHandshake(req *http.Request) (int, error) {
 // Origin parses the Origin header in req.
 // If the Origin header is not set, it returns nil and nil.
 func Origin(config *Config, req *http.Request) (*url.URL, error) {
-	var origin string
-	switch config.Version {
-	case ProtocolVersionHybi13:
-		origin = req.Header.Get("Origin")
-	}
+	origin := req.Header.Get("Origin")
 	if origin == "" {
 		return nil, nil
 	}

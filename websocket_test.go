@@ -339,21 +339,6 @@ func TestTrailingSpaces(t *testing.T) {
 	}
 }
 
-func TestDialConfigBadVersion(t *testing.T) {
-	t.Parallel()
-	once.Do(startServer)
-	config := newConfig("/echo")
-	config.Version = 1234
-
-	_, err := DialConfig(config)
-
-	if dialerr, ok := errors.AsType[*DialError](err); ok {
-		if !errors.Is(dialerr.Err, ErrBadProtocolVersion) {
-			t.Errorf("dial expected err %q but got %q", ErrBadProtocolVersion, dialerr.Err)
-		}
-	}
-}
-
 func TestDialConfigWithDialer(t *testing.T) {
 	t.Parallel()
 	once.Do(startServer)
@@ -556,7 +541,6 @@ var originTests = []struct {
 func TestOrigin(t *testing.T) {
 	t.Parallel()
 	conf := newConfig("/echo")
-	conf.Version = ProtocolVersionHybi13
 	for i, tt := range originTests {
 		origin, err := Origin(conf, tt.req)
 		if err != nil {

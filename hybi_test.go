@@ -63,7 +63,6 @@ Sec-WebSocket-Protocol: chat
 		}
 		config.Protocol = append(config.Protocol, "chat")
 		config.Protocol = append(config.Protocol, "superchat")
-		config.Version = ProtocolVersionHybi13
 		config.handshakeData = map[string]string{
 			"key": "dGhlIHNhbXBsZSBub25jZQ==",
 		}
@@ -92,7 +91,7 @@ Sec-WebSocket-Protocol: chat
 			"Sec-Websocket-Key":      config.handshakeData["key"],
 			"Origin":                 config.Origin.String(),
 			"Sec-Websocket-Protocol": "chat, superchat",
-			"Sec-Websocket-Version":  SupportedProtocolVersion,
+			"Sec-Websocket-Version":  protocolVersion,
 		}
 		for k, v := range expectedHeader {
 			if req.Header.Get(k) != v {
@@ -125,7 +124,6 @@ Sec-WebSocket-Protocol: chat
 	}
 	config.Protocol = append(config.Protocol, "chat")
 	config.Protocol = append(config.Protocol, "superchat")
-	config.Version = ProtocolVersionHybi13
 	config.Header = http.Header(make(map[string][]string))
 	config.Header.Add("User-Agent", "test")
 
@@ -158,7 +156,7 @@ Sec-WebSocket-Protocol: chat
 		"Sec-Websocket-Key":      config.handshakeData["key"],
 		"Origin":                 config.Origin.String(),
 		"Sec-Websocket-Protocol": "chat, superchat",
-		"Sec-Websocket-Version":  SupportedProtocolVersion,
+		"Sec-Websocket-Version":  protocolVersion,
 		"User-Agent":             "test",
 	}
 	for k, v := range expectedHeader {

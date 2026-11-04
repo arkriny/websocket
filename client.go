@@ -38,7 +38,6 @@ func NewConfig(server, origin string) (*Config, error) {
 	return &Config{
 		Location: location,
 		Origin:   originURL,
-		Version:  ProtocolVersionHybi13,
 		Header:   http.Header(make(map[string][]string)),
 	}, nil
 }
