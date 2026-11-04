@@ -384,40 +384,45 @@ func getNonceAccept(nonce []byte) []byte {
 }
 
 func clientHandshake(config *Config, br *bufio.Reader, bw *bufio.Writer) error {
-	bw.WriteString("GET " + config.Location.RequestURI() + " HTTP/1.1\r\n")
+	req := &http.Request{
+		URL:    config.Location,
+		Header: make(http.Header),
+		// According to RFC 6874, an HTTP client, proxy, or other
+		// intermediary must remove any IPv6 zone identifier attached
+		// to an outgoing URI.
+		Host: removeZone(config.Location.Host),
+	}
 
-	// According to RFC 6874, an HTTP client, proxy, or other
-	// intermediary must remove any IPv6 zone identifier attached
-	// to an outgoing URI.
-	bw.WriteString("Host: " + removeZone(config.Location.Host) + "\r\n")
-	bw.WriteString("Upgrade: websocket\r\n")
-	bw.WriteString("Connection: Upgrade\r\n")
+	req.Header["Upgrade"] = []string{"websocket"}
+	req.Header["Connection"] = []string{"Upgrade"}
 	nonce := generateNonce()
 	if config.handshakeData != nil {
 		nonce = []byte(config.handshakeData["key"])
 	}
-	bw.WriteString("Sec-WebSocket-Key: " + string(nonce) + "\r\n")
-	bw.WriteString("Origin: " + strings.ToLower(config.Origin.String()) + "\r\n")
-
+	req.Header["Origin"] = []string{strings.ToLower(config.Origin.String())}
+	req.Header["Sec-WebSocket-Key"] = []string{string(nonce)}
 	if config.Version != ProtocolVersionHybi13 {
 		return ErrBadProtocolVersion
 	}
-
-	bw.WriteString("Sec-WebSocket-Version: " + fmt.Sprintf("%d", config.Version) + "\r\n")
+	req.Header["Sec-WebSocket-Version"] = []string{fmt.Sprintf("%d", config.Version)}
 	if len(config.Protocol) > 0 {
-		bw.WriteString("Sec-WebSocket-Protocol: " + strings.Join(config.Protocol, ", ") + "\r\n")
+		req.Header["Sec-WebSocket-Protocol"] = []string{strings.Join(config.Protocol, ", ")}
 	}
 	// TODO(ukai): send Sec-WebSocket-Extensions.
-	if err := config.Header.WriteSubset(bw, handshakeHeader); err != nil {
-		return err
+	for k, vs := range config.Header {
+		if !handshakeHeader[k] {
+			req.Header[k] = vs
+		}
 	}
 
-	bw.WriteString("\r\n")
+	if err := req.Write(bw); err != nil {
+		return err
+	}
 	if err := bw.Flush(); err != nil {
 		return err
 	}
 
-	resp, err := http.ReadResponse(br, &http.Request{Method: http.MethodGet})
+	resp, err := http.ReadResponse(br, req)
 	if err != nil {
 		return err
 	}
