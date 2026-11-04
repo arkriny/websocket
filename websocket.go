@@ -41,28 +41,21 @@ const (
 	DefaultMaxPayloadBytes = 32 << 20 // 32MB
 )
 
-// ProtocolError represents WebSocket protocol errors.
-type ProtocolError struct {
-	ErrorString string
-}
-
-func (err *ProtocolError) Error() string { return err.ErrorString }
-
 var (
-	ErrBadProtocolVersion   = &ProtocolError{"bad protocol version"}
-	ErrBadScheme            = &ProtocolError{"bad scheme"}
-	ErrBadStatus            = &ProtocolError{"bad status"}
-	ErrBadUpgrade           = &ProtocolError{"missing or bad upgrade"}
-	ErrBadWebSocketOrigin   = &ProtocolError{"missing or bad WebSocket-Origin"}
-	ErrBadWebSocketLocation = &ProtocolError{"missing or bad WebSocket-Location"}
-	ErrBadWebSocketProtocol = &ProtocolError{"missing or bad WebSocket-Protocol"}
-	ErrBadWebSocketVersion  = &ProtocolError{"missing or bad WebSocket Version"}
-	ErrChallengeResponse    = &ProtocolError{"mismatch challenge/response"}
-	ErrBadFrame             = &ProtocolError{"bad frame"}
-	ErrBadFrameBoundary     = &ProtocolError{"not on frame boundary"}
-	ErrNotWebSocket         = &ProtocolError{"not websocket protocol"}
-	ErrBadRequestMethod     = &ProtocolError{"bad method"}
-	ErrNotSupported         = &ProtocolError{"not supported"}
+	ErrBadProtocolVersion   = errors.New("bad protocol version")
+	ErrBadScheme            = errors.New("bad scheme")
+	ErrBadStatus            = errors.New("bad status")
+	ErrBadUpgrade           = errors.New("missing or bad upgrade")
+	ErrBadWebSocketOrigin   = errors.New("missing or bad WebSocket-Origin")
+	ErrBadWebSocketLocation = errors.New("missing or bad WebSocket-Location")
+	ErrBadWebSocketProtocol = errors.New("missing or bad WebSocket-Protocol")
+	ErrBadWebSocketVersion  = errors.New("missing or bad WebSocket Version")
+	ErrChallengeResponse    = errors.New("mismatch challenge/response")
+	ErrBadFrame             = errors.New("bad frame")
+	ErrBadFrameBoundary     = errors.New("not on frame boundary")
+	ErrNotWebSocket         = errors.New("not websocket protocol")
+	ErrBadRequestMethod     = errors.New("bad method")
+	ErrNotSupported         = errors.New("not supported")
 )
 
 // ErrFrameTooLarge is returned by Codec's Receive method if payload size

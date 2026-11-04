@@ -41,11 +41,11 @@ const (
 )
 
 var (
-	ErrBadMaskingKey         = &ProtocolError{"bad masking key"}
-	ErrBadPongMessage        = &ProtocolError{"bad pong message"}
-	ErrBadClosingStatus      = &ProtocolError{"bad closing status"}
-	ErrUnsupportedExtensions = &ProtocolError{"unsupported extensions"}
-	ErrNotImplemented        = &ProtocolError{"not implemented"}
+	ErrBadMaskingKey         = errors.New("bad masking key")
+	ErrBadPongMessage        = errors.New("bad pong message")
+	ErrBadClosingStatus      = errors.New("bad closing status")
+	ErrUnsupportedExtensions = errors.New("unsupported extensions")
+	ErrNotImplemented        = errors.New("not implemented")
 
 	handshakeHeader = map[string]bool{
 		"Host":                   true,
