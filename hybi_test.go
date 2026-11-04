@@ -92,7 +92,7 @@ Sec-WebSocket-Protocol: chat
 			"Sec-Websocket-Key":      config.handshakeData["key"],
 			"Origin":                 config.Origin.String(),
 			"Sec-Websocket-Protocol": "chat, superchat",
-			"Sec-Websocket-Version":  fmt.Sprintf("%d", ProtocolVersionHybi13),
+			"Sec-Websocket-Version":  SupportedProtocolVersion,
 		}
 		for k, v := range expectedHeader {
 			if req.Header.Get(k) != v {
@@ -158,7 +158,7 @@ Sec-WebSocket-Protocol: chat
 		"Sec-Websocket-Key":      config.handshakeData["key"],
 		"Origin":                 config.Origin.String(),
 		"Sec-Websocket-Protocol": "chat, superchat",
-		"Sec-Websocket-Version":  fmt.Sprintf("%d", ProtocolVersionHybi13),
+		"Sec-Websocket-Version":  SupportedProtocolVersion,
 		"User-Agent":             "test",
 	}
 	for k, v := range expectedHeader {
