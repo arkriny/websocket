@@ -331,16 +331,14 @@ func (handler *frameHandler) WritePong(msg []byte) (int, error) {
 
 // newConn creates a new WebSocket connection.
 func newConn(config *Config, buf *bufio.ReadWriter, rwc io.ReadWriteCloser, request *http.Request) *Conn {
-	if buf == nil {
-		br := bufio.NewReader(rwc)
-		bw := bufio.NewWriter(rwc)
-		buf = bufio.NewReadWriter(br, bw)
-	}
-	ws := &Conn{config: config, request: request, buf: buf, rwc: rwc,
+	ws := &Conn{
+		config:             config,
+		request:            request,
+		buf:                buf,
+		rwc:                rwc,
 		frameReaderFactory: frameReaderFactory{buf.Reader},
-		frameWriterFactory: frameWriterFactory{
-			buf.Writer, request == nil},
-		PayloadType: TextFrame,
+		frameWriterFactory: frameWriterFactory{buf.Writer, request == nil},
+		PayloadType:        TextFrame,
 	}
 	ws.frameHandler = &frameHandler{conn: ws}
 	return ws
@@ -449,11 +447,6 @@ func clientHandshake(config *Config, br *bufio.Reader, bw *bufio.Writer) error {
 	}
 
 	return nil
-}
-
-// newClientConn creates a client WebSocket connection after handshake.
-func newClientConn(config *Config, buf *bufio.ReadWriter, rwc io.ReadWriteCloser) *Conn {
-	return newConn(config, buf, rwc, nil)
 }
 
 // A serverHandshaker performs a server handshake.

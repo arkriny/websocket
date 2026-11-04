@@ -50,7 +50,7 @@ func NewClient(config *Config, rwc io.ReadWriteCloser) (*Conn, error) {
 		return nil, err
 	}
 	buf := bufio.NewReadWriter(br, bw)
-	return newClientConn(config, buf, rwc), nil
+	return newConn(config, buf, rwc, nil), nil
 }
 
 // Dial opens a new client connection to a WebSocket.
