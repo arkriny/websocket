@@ -18,6 +18,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 )
 
@@ -439,19 +440,11 @@ func clientHandshake(config *Config, br *bufio.Reader, bw *bufio.Writer) error {
 	}
 	offeredProtocol := resp.Header.Get("Sec-WebSocket-Protocol")
 	if offeredProtocol != "" {
-		protocolMatched := false
-		for i := range len(config.Protocol) {
-			if config.Protocol[i] == offeredProtocol {
-				protocolMatched = true
-				break
-			}
-		}
-		if !protocolMatched {
+		if !slices.Contains(config.Protocol, offeredProtocol) {
 			return ErrBadWebSocketProtocol
 		}
 		config.Protocol = []string{offeredProtocol}
 	}
-
 	return nil
 }
 
