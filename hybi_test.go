@@ -293,6 +293,7 @@ Sec-WebSocket-Version: 9
 }
 
 func testHybiFrame(t *testing.T, testHeader, testPayload, testMaskedPayload []byte, fh *frameHeader) {
+	t.Helper()
 	b := bytes.NewBuffer([]byte{})
 	frameWriterFactory := &frameWriterFactory{bufio.NewWriter(b), false}
 	w := frameWriterFactory.NewFrameWriter(TextFrame)
@@ -457,11 +458,9 @@ func TestHybiShortRead(t *testing.T) {
 	bw := bufio.NewWriter(bytes.NewBuffer([]byte{}))
 	conn := newConn(newConfig("/"), bufio.NewReadWriter(br, bw), nil, nil)
 
-	step := 0
-	pos := 0
 	expectedPos := []int{2, 5, 16, 19}
 	expectedLen := []int{3, 2, 3, 2}
-	for {
+	for step := 0; ; step++ {
 		msg := make([]byte, 3)
 		n, err := conn.Read(msg)
 		if step >= len(expectedPos) {
@@ -473,7 +472,7 @@ func TestHybiShortRead(t *testing.T) {
 			}
 			return
 		}
-		pos = expectedPos[step]
+		pos := expectedPos[step]
 		endPos := pos + expectedLen[step]
 		if err != nil {
 			t.Errorf("read from %d, got error %q", pos, err)
@@ -485,7 +484,6 @@ func TestHybiShortRead(t *testing.T) {
 		if !bytes.Equal(wireData[pos:endPos], msg[:n]) {
 			t.Errorf("read from %d, frame %v, got %v", pos, wireData[pos:endPos], msg[:n])
 		}
-		step++
 	}
 }
 

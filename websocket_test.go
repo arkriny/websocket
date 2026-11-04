@@ -140,14 +140,14 @@ func TestEcho(t *testing.T) {
 	if _, err := conn.Write(msg); err != nil {
 		t.Errorf("Write: %v", err)
 	}
-	var actual_msg = make([]byte, 512)
-	n, err := conn.Read(actual_msg)
+	var actualMsg = make([]byte, 512)
+	n, err := conn.Read(actualMsg)
 	if err != nil {
 		t.Errorf("Read: %v", err)
 	}
-	actual_msg = actual_msg[0:n]
-	if !bytes.Equal(msg, actual_msg) {
-		t.Errorf("Echo: expected %q got %q", msg, actual_msg)
+	actualMsg = actualMsg[0:n]
+	if !bytes.Equal(msg, actualMsg) {
+		t.Errorf("Echo: expected %q got %q", msg, actualMsg)
 	}
 	conn.Close()
 }
@@ -246,6 +246,7 @@ func TestWithQuery(t *testing.T) {
 }
 
 func testWithProtocol(t *testing.T, subproto []string) (string, error) {
+	t.Helper()
 	once.Do(startServer)
 
 	client, err := net.Dial("tcp", serverAddr)
@@ -395,22 +396,22 @@ func TestSmallBuffer(t *testing.T) {
 	if _, err := conn.Write(msg); err != nil {
 		t.Errorf("Write: %v", err)
 	}
-	var small_msg = make([]byte, 8)
-	n, err := conn.Read(small_msg)
+	var smallMsg = make([]byte, 8)
+	_, err = conn.Read(smallMsg)
 	if err != nil {
 		t.Errorf("Read: %v", err)
 	}
-	if !bytes.Equal(msg[:len(small_msg)], small_msg) {
-		t.Errorf("Echo: expected %q got %q", msg[:len(small_msg)], small_msg)
+	if !bytes.Equal(msg[:len(smallMsg)], smallMsg) {
+		t.Errorf("Echo: expected %q got %q", msg[:len(smallMsg)], smallMsg)
 	}
-	var second_msg = make([]byte, len(msg))
-	n, err = conn.Read(second_msg)
+	var secondMsg = make([]byte, len(msg))
+	n, err := conn.Read(secondMsg)
 	if err != nil {
 		t.Errorf("Read: %v", err)
 	}
-	second_msg = second_msg[0:n]
-	if !bytes.Equal(msg[len(small_msg):], second_msg) {
-		t.Errorf("Echo: expected %q got %q", msg[len(small_msg):], second_msg)
+	secondMsg = secondMsg[0:n]
+	if !bytes.Equal(msg[len(smallMsg):], secondMsg) {
+		t.Errorf("Echo: expected %q got %q", msg[len(smallMsg):], secondMsg)
 	}
 	conn.Close()
 }
