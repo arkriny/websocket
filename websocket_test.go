@@ -31,28 +31,6 @@ func echoServer(ws *Conn) {
 	io.Copy(ws, ws)
 }
 
-type Count struct {
-	S string
-	N int
-}
-
-func countServer(ws *Conn) {
-	defer ws.Close()
-	for {
-		var count Count
-		err := JSON.Receive(ws, &count)
-		if err != nil {
-			return
-		}
-		count.N++
-		count.S = strings.Repeat(count.S, count.N)
-		err = JSON.Send(ws, count)
-		if err != nil {
-			return
-		}
-	}
-}
-
 func ctrlAndDataServer(ws *Conn) {
 	defer ws.Close()
 	h := &frameHandler{conn: ws}
@@ -104,7 +82,6 @@ func subProtoServer(ws *Conn) {
 
 func startServer() {
 	http.Handle("/echo", Handler(echoServer))
-	http.Handle("/count", Handler(countServer))
 	http.Handle("/ctrldata", Handler(ctrlAndDataServer))
 	subproto := Server{
 		Handshake: subProtocolHandshake,
@@ -174,50 +151,6 @@ func TestAddr(t *testing.T) {
 	la := conn.LocalAddr().String()
 	if !strings.HasPrefix(la, "http://") {
 		t.Errorf("Bad local addr: %v", la)
-	}
-	conn.Close()
-}
-
-func TestCount(t *testing.T) {
-	t.Parallel()
-	once.Do(startServer)
-
-	// websocket.Dial()
-	client, err := net.Dial("tcp", serverAddr)
-	if err != nil {
-		t.Fatal("dialing", err)
-	}
-	conn, err := NewClient(newConfig("/count"), client)
-	if err != nil {
-		t.Errorf("WebSocket handshake error: %v", err)
-		return
-	}
-
-	var count Count
-	count.S = "hello"
-	if err := JSON.Send(conn, count); err != nil {
-		t.Errorf("Write: %v", err)
-	}
-	if err := JSON.Receive(conn, &count); err != nil {
-		t.Errorf("Read: %v", err)
-	}
-	if count.N != 1 {
-		t.Errorf("count: expected %d got %d", 1, count.N)
-	}
-	if count.S != "hello" {
-		t.Errorf("count: expected %q got %q", "hello", count.S)
-	}
-	if err := JSON.Send(conn, count); err != nil {
-		t.Errorf("Write: %v", err)
-	}
-	if err := JSON.Receive(conn, &count); err != nil {
-		t.Errorf("Read: %v", err)
-	}
-	if count.N != 2 {
-		t.Errorf("count: expected %d got %d", 2, count.N)
-	}
-	if count.S != "hellohello" {
-		t.Errorf("count: expected %q got %q", "hellohello", count.S)
 	}
 	conn.Close()
 }

@@ -15,7 +15,6 @@ package websocket
 import (
 	"bufio"
 	"crypto/tls"
-	"encoding/json"
 	"errors"
 	"io"
 	"net"
@@ -338,33 +337,3 @@ Trivial usage:
 	websocket.Message.Send(ws, data)
 */
 var Message = Codec{marshal, unmarshal}
-
-func jsonMarshal(v any) (msg []byte, payloadType byte, err error) {
-	msg, err = json.Marshal(v)
-	return msg, TextFrame, err
-}
-
-func jsonUnmarshal(msg []byte, payloadType byte, v any) (err error) {
-	return json.Unmarshal(msg, v)
-}
-
-/*
-JSON is a codec to send/receive JSON data in a frame from a WebSocket connection.
-
-Trivial usage:
-
-	import "websocket"
-
-	type T struct {
-		Msg string
-		Count int
-	}
-
-	// receive JSON type T
-	var data T
-	websocket.JSON.Receive(ws, &data)
-
-	// send JSON type T
-	websocket.JSON.Send(ws, data)
-*/
-var JSON = Codec{jsonMarshal, jsonUnmarshal}
